@@ -13,7 +13,7 @@
   // Datos del usuario que se mostrarán en el perfil
   let usuario = {
     id: null,
-    nombre: "",
+    nombre: "", 
     correo: "",
     tipoUsuario: "",
   };
@@ -38,7 +38,7 @@
       const datos = JSON.parse(guardado);
 
       usuario = {
-        id: datos.id || 1, // en mock usamos 1
+        id: datos.idUsuario || 1, // en mock usamos 1
         nombre: datos.nombre || "",
         correo: datos.correo || "",
         tipoUsuario: datos.tipoUsuario || "general",
@@ -70,7 +70,7 @@
 
       // Guardamos lo que regresa la API en localStorage
       localStorage.setItem("usuario", JSON.stringify(actualizado));
-      mensaje = "Cambios guardados correctamente (simulado).";
+      mensaje = "Cambios guardados correctamente.";
     } catch (e) {
       console.error(e);
       error = e.message || "No se pudieron guardar los cambios.";
@@ -80,7 +80,7 @@
   // Elimina la cuenta del usuario (simulado)
   async function eliminarCuenta() {
     const confirmar = confirm(
-      "¿Seguro que deseas eliminar tu cuenta? Esta acción es permanente (simulada)."
+      "¿Seguro que deseas eliminar tu cuenta? Esta acción es permanente."
     );
     if (!confirmar) return;
 
