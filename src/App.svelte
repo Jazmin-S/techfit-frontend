@@ -1,47 +1,70 @@
 <script>
-  // Importamos las "pantallas" (componentes) que creaste
+  // Pantallas existentes
   import Login from "./pages/Login.svelte";
   import Registro from "./pages/Registro.svelte";
   import Perfil from "./pages/Perfil.svelte";
 
-  // Controla qué pantalla se muestra actualmente
-  // valores posibles: "login", "registro", "perfil"
+  // Nuevos catálogos
+  import CatalogoGeneral from "./pages/CatalogoGeneral.svelte";
+  import CatalogoRehabilitacion from "./pages/CatalogoRehabilitacion.svelte";
+  import CatalogoAdultoMayor from "./pages/CatalogoAdultoMayor.svelte";
+
+  // "login" | "registro" | "perfil" | "catalogoGeneral" | "catalogoRehabilitacion" | "catalogoAdultoMayor"
   let paginaActual = "login";
 
-  // Cambia la pantalla a Login
   function irALogin() {
     paginaActual = "login";
   }
 
-  // Cambia la pantalla a Registro
   function irARegistro() {
     paginaActual = "registro";
   }
 
-  // Cambia la pantalla a Perfil
   function irAPerfil() {
     paginaActual = "perfil";
   }
+
+  function irACatalogoGeneral() {
+    paginaActual = "catalogoGeneral";
+  }
+
+  function irACatalogoRehabilitacion() {
+    paginaActual = "catalogoRehabilitacion";
+  }
+
+  function irACatalogoAdultoMayor() {
+    paginaActual = "catalogoAdultoMayor";
+  }
 </script>
 
-<!-- Contenedor general de la app -->
 <div class="root">
   {#if paginaActual === "login"}
-    <!-- Pantalla de inicio de sesión -->
-    <Login irARegistro={irARegistro} irAPerfil={irAPerfil} />
+    <Login
+      irARegistro={irARegistro}
+      irAPerfil={irAPerfil}
+      irACatalogoGeneral={irACatalogoGeneral}
+      irACatalogoRehabilitacion={irACatalogoRehabilitacion}
+      irACatalogoAdultoMayor={irACatalogoAdultoMayor}
+    />
 
   {:else if paginaActual === "registro"}
-    <!-- Pantalla de registro -->
     <Registro irALogin={irALogin} />
 
   {:else if paginaActual === "perfil"}
-    <!-- Pantalla de perfil -->
     <Perfil irALogin={irALogin} />
+
+  {:else if paginaActual === "catalogoGeneral"}
+    <CatalogoGeneral irALogin={irALogin} />
+
+  {:else if paginaActual === "catalogoRehabilitacion"}
+    <CatalogoRehabilitacion irALogin={irALogin} />
+
+  {:else if paginaActual === "catalogoAdultoMayor"}
+    <CatalogoAdultoMayor irALogin={irALogin} />
   {/if}
 </div>
 
 <style>
-  /* Contenedor para que las pantallas ocupen todo el alto */
   .root {
     min-height: 100vh;
   }

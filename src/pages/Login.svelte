@@ -1,54 +1,69 @@
 <script>
-  // Importamos la función login del servicio de API
+  // Seguimos usando la API mock que ya tienes. NO tocamos la conexión real.
   import { login as loginApi } from "../services/api";
 
-  // Estas funciones vienen desde App.svelte como "props"
-  // y se usan para cambiar de pantalla.
+  // Funciones que vienen de App.svelte para cambiar de pantalla
   export let irARegistro;
   export let irAPerfil;
+  export let irACatalogoGeneral;
+  export let irACatalogoRehabilitacion;
+  export let irACatalogoAdultoMayor;
 
-  // Variables reactivas para los campos del formulario
+  // Datos del formulario
   let correo = "";
   let contrasena = "";
+  let tipoUsuario = "general"; // nuevo campo
   let error = "";
 
-  // Maneja el envío del formulario de login
+  // Enviar el formulario de login
   async function handleSubmit(event) {
     event.preventDefault();
     error = "";
 
-    // Validación sencilla (que no haya campos vacíos)
     if (!correo || !contrasena) {
       error = "Todos los campos son obligatorios.";
       return;
     }
 
     try {
-      // Llamamos a la API (por ahora es mock hasta que exista el backend real)
-      const usuario = await loginApi(correo, contrasena);
+      // Llamamos a la función de login (mock por ahora)
+      const usuarioBackend = await loginApi(correo, contrasena);
+
+      // Mezclamos lo que regrese el backend/mock con el tipo elegido en el login.
+      const usuario = {
+        ...usuarioBackend,
+        tipoUsuario, // sobrescribe o añade
+      };
 
       // Guardamos el usuario en localStorage
       localStorage.setItem("usuario", JSON.stringify(usuario));
 
-      // Cambiamos de pantalla: vamos a Perfil
-      if (irAPerfil) irAPerfil();
+      // Y ahora decidimos a qué catálogo mandar según el tipo elegido
+      if (tipoUsuario === "general" && irACatalogoGeneral) {
+        irACatalogoGeneral();
+      } else if (tipoUsuario === "rehabilitacion" && irACatalogoRehabilitacion) {
+        irACatalogoRehabilitacion();
+      } else if (tipoUsuario === "adulto_mayor" && irACatalogoAdultoMayor) {
+        irACatalogoAdultoMayor();
+      } else if (irAPerfil) {
+        // Si por alguna razón no hay callback, al menos vamos a Perfil
+        irAPerfil();
+      }
     } catch (e) {
       console.error(e);
       error = e.message || "No se pudo iniciar sesión.";
     }
   }
 
-  // Llama a la función que cambia a la pantalla de Registro
   function handleIrARegistro() {
     if (irARegistro) irARegistro();
   }
 </script>
 
-<!-- Vista de la pantalla de login -->
 <main class="app">
   <section class="card">
     <h1 class="title">TECHFIT</h1>
-    <p class="subtitle">Inicia sesión para continuar</p>
+    <p class="subtitle">Inicia sesión para ver tu catálogo de ejercicios</p>
 
     {#if error}
       <p class="error">{error}</p>
@@ -76,8 +91,17 @@
         />
       </label>
 
+      <label>
+        Tipo de usuario
+        <select bind:value={tipoUsuario}>
+          <option value="general">General</option>
+          <option value="rehabilitacion">Rehabilitación</option>
+          <option value="adulto_mayor">Adulto mayor</option>
+        </select>
+      </label>
+
       <button type="submit" class="primary-btn">
-        Iniciar sesión
+        Entrar a mi catálogo
       </button>
     </form>
 
@@ -88,6 +112,16 @@
 </main>
 
 <style>
+  /* Dejamos el mismo estilo bonito que ya tenías */
+
+  :global(body) {
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      sans-serif;
+    background: radial-gradient(circle at top left, #1c99ff 0, #0e0e1a 45%, #000 100%);
+    color: #f5f5f5;
+  }
+
   .app {
     min-height: 100vh;
     display: flex;
@@ -146,7 +180,8 @@
     font-size: 0.9rem;
   }
 
-  input {
+  input,
+  select {
     padding: 0.6rem 0.7rem;
     border-radius: 8px;
     border: 1px solid #33364d;
@@ -155,7 +190,8 @@
     font-size: 0.9rem;
   }
 
-  input:focus {
+  input:focus,
+  select:focus {
     outline: none;
     border-color: #1c99ff;
     box-shadow: 0 0 0 1px rgba(28, 153, 255, 0.5);
