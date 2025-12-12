@@ -8,9 +8,10 @@
   import CatalogoGeneral from "./pages/CatalogoGeneral.svelte";
   import CatalogoRehabilitacion from "./pages/CatalogoRehabilitacion.svelte";
   import CatalogoAdultoMayor from "./pages/CatalogoAdultoMayor.svelte";
+  import AgregarEjercicio from "./pages/AgregarEjercicio.svelte";
 
   // "login" | "registro" | "perfil" | "catalogoGeneral" | "catalogoRehabilitacion" | "catalogoAdultoMayor"
-  let paginaActual = "login";
+  let paginaActual = "catalogoGeneral";
 
   function irALogin() {
     paginaActual = "login";
@@ -35,6 +36,15 @@
   function irACatalogoAdultoMayor() {
     paginaActual = "catalogoAdultoMayor";
   }
+
+  function irAAgregarEjercicio(){
+    paginaActual = "agregarEjercicio";
+  }
+
+  function volverDesdeAgregarEjercicio() {
+    paginaActual = "catalogoGeneral";
+}
+
 </script>
 
 <div class="root">
@@ -45,6 +55,7 @@
       irACatalogoGeneral={irACatalogoGeneral}
       irACatalogoRehabilitacion={irACatalogoRehabilitacion}
       irACatalogoAdultoMayor={irACatalogoAdultoMayor}
+      irAAgregarEjercicio={irAAgregarEjercicio}
     />
 
   {:else if paginaActual === "registro"}
@@ -54,13 +65,17 @@
     <Perfil irALogin={irALogin} />
 
   {:else if paginaActual === "catalogoGeneral"}
-    <CatalogoGeneral irALogin={irALogin} />
+    <CatalogoGeneral irALogin={irALogin}
+     irAAgregarEjercicio={irAAgregarEjercicio} />
 
   {:else if paginaActual === "catalogoRehabilitacion"}
     <CatalogoRehabilitacion irALogin={irALogin} />
 
   {:else if paginaActual === "catalogoAdultoMayor"}
     <CatalogoAdultoMayor irALogin={irALogin} />
+
+  {:else if paginaActual === "agregarEjercicio"}
+    <AgregarEjercicio volver={volverDesdeAgregarEjercicio} />
   {/if}
 </div>
 

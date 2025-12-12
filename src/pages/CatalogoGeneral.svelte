@@ -3,6 +3,7 @@
 
   // Función que viene de App.svelte para volver al login (cerrar sesión)
   export let irALogin;
+  export let irAAgregarEjercicio
 
   // Lista de ejercicios (datos estáticos por ahora)
   const ejercicios = [
@@ -46,6 +47,9 @@
       </div>
       <button class="logout-btn" on:click={cerrarSesion}>
         Cerrar sesión
+      </button>
+      <button class="Agregar-btn" on:click={irAAgregarEjercicio}>
+       Agregar ejercicio
       </button>
     </header>
 
@@ -117,6 +121,21 @@
 
   .logout-btn:hover {
     background: rgba(255, 80, 80, 0.18);
+  }
+
+  .Agregar-btn{
+    border: 1px solid rgba(125, 255, 120, 0.7);
+    background: rgba(80, 255, 80, 0.08);
+    color: #b7ffc2ff;
+    border-radius: 999px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .Agregar-btn:hover {
+    background: rgba(80, 255, 80, 0.18);
   }
 
   .grid {
