@@ -108,18 +108,18 @@
         {#if videoAbierto === "calentamiento"}
           <h2>Calentamiento dinámico</h2>
           <div class="video-wrapper">
-            <iframe
-              src="https://www.youtube.com/embed/VIDEO_ID_1"
-              title="Calentamiento dinámico"
-              frameborder="0"
-              allowfullscreen
-            ></iframe>
+          <iframe
+            src="https://www.youtube.com/embed/iqBkUGKd4Eo"
+            title="Calentamiento dinámico"
+            frameborder="0"
+            allowfullscreen
+          ></iframe>
           </div>
         {:else if videoAbierto === "circuito"}
           <h2>Circuito de cuerpo completo</h2>
           <div class="video-wrapper">
             <iframe
-              src="https://www.youtube.com/embed/VIDEO_ID_2"
+              src="https://www.youtube.com/embed/283i_ivVVYo"
               title="Circuito de cuerpo completo"
               frameborder="0"
               allowfullscreen
@@ -129,11 +129,11 @@
           <h2>HIIT suave</h2>
           <div class="video-wrapper">
             <iframe
-              src="https://www.youtube.com/embed/VIDEO_ID_3"
+              src="https://www.youtube.com/embed/K44TJK9iNf8"
               title="HIIT suave"
               frameborder="0"
               allowfullscreen
-            ></iframe>
+          ></iframe>
           </div>
         {/if}
       </div>

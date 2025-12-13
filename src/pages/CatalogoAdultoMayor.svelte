@@ -76,30 +76,30 @@
         <button class="close-btn" on:click={cerrarVideo}>✕</button>
 
         {#if videoAbierto === 0}
-          <h2>Video – Caminata suave en lugar seguro</h2>
+          <h2>Caminata suave en lugar seguro</h2>
           <div class="video-wrapper">
             <iframe
-              src="https://www.youtube.com/embed/VIDEO_ID_1"
+              src="https://www.youtube.com/embed/-X9VNfRg1Mw"
               title="Caminata suave en lugar seguro"
               frameborder="0"
               allowfullscreen
             ></iframe>
           </div>
         {:else if videoAbierto === 1}
-          <h2>Video – Sentarse y levantarse de la silla</h2>
+          <h2>Sentarse y levantarse de la silla</h2>
           <div class="video-wrapper">
             <iframe
-              src="https://www.youtube.com/embed/VIDEO_ID_2"
+              src="https://www.youtube.com/embed/untx40bsbC0"
               title="Sentarse y levantarse de la silla"
               frameborder="0"
               allowfullscreen
             ></iframe>
           </div>
         {:else if videoAbierto === 2}
-          <h2>Video – Movimiento de brazos con botellas ligeras</h2>
+          <h2>Movimiento de brazos con botellas ligeras</h2>
           <div class="video-wrapper">
             <iframe
-              src="https://www.youtube.com/embed/VIDEO_ID_3"
+              src="https://www.youtube.com/embed/wdX5mg7b6Ig"
               title="Movimiento de brazos con botellas ligeras"
               frameborder="0"
               allowfullscreen

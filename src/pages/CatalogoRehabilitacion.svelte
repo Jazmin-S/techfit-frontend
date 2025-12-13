@@ -77,30 +77,30 @@
         <button class="close-btn" on:click={cerrarVideo}>✕</button>
 
         {#if videoAbierto === 0}
-          <h2>Video – Movilidad de cuello</h2>
+          <h2>Movilidad de cuello</h2>
           <div class="video-wrapper">
             <iframe
-              src="https://www.youtube.com/embed/VIDEO_ID_1"
+              src="https://www.youtube.com/embed/LTkL3IaV8Go"
               title="Movilidad de cuello"
               frameborder="0"
               allowfullscreen
-            ></iframe>
+          ></iframe>
           </div>
         {:else if videoAbierto === 1}
-          <h2>Video – Elevación de talones sentado</h2>
+          <h2>Elevación de talones sentado</h2>
           <div class="video-wrapper">
             <iframe
-              src="https://www.youtube.com/embed/VIDEO_ID_2"
+              src="https://www.youtube.com/embed/wRRYk709cYk"
               title="Elevación de talones sentado"
               frameborder="0"
               allowfullscreen
             ></iframe>
           </div>
         {:else if videoAbierto === 2}
-          <h2>Video – Puente de cadera asistido</h2>
+          <h2>Puente de cadera asistido</h2>
           <div class="video-wrapper">
             <iframe
-              src="https://www.youtube.com/embed/VIDEO_ID_3"
+              src="https://www.youtube.com/embed/M-mnbbpJmXI"
               title="Puente de cadera asistido"
               frameborder="0"
               allowfullscreen
