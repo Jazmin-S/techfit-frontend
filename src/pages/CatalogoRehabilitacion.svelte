@@ -1,259 +1,190 @@
 <script>
-  // Catálogo de ejercicios para usuarios en REHABILITACIÓN
+  import { onMount } from "svelte";
 
-  export let irALogin;
+  /** @type {() => void} */
+  export let irALogin = () => {};
+  /** @type {() => void} */
+  export let irAPerfil = () => {};
+  /** @type {() => void} */
+  export let irAAgregarEjercicio = () => {};
 
-  const ejercicios = [
+  const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8080/api";
+
+  let usuario = null;
+  let esAdmin = false;
+
+  let cargando = true;
+  let error = "";
+  let ejercicios = [];
+
+  let videoAbierto = null;
+
+  const fallback = [
     {
       nombre: "Movilidad de cuello",
       duracion: "5 minutos",
       nivel: "Suave",
       objetivo: "Reducir tensión cervical y mejorar rango de movimiento.",
-      recomendaciones: "Movimientos lentos, sin giros bruscos. Detener si hay dolor."
+      recomendaciones: "Movimientos lentos, sin giros bruscos. Detener si hay dolor.",
+      tipoUsuario: "rehabilitacion",
+      videoUrl: "https://www.youtube.com/embed/LTkL3IaV8Go"
     },
     {
       nombre: "Elevación de talones sentado",
       duracion: "3 series de 10 repeticiones",
       nivel: "Suave",
       objetivo: "Activar pantorrillas sin cargar todo el peso corporal.",
-      recomendaciones: "Apoyar bien los pies, subir y bajar de forma controlada."
+      recomendaciones: "Subir y bajar de forma controlada.",
+      tipoUsuario: "rehabilitacion",
+      videoUrl: "https://www.youtube.com/embed/wRRYk709cYk"
     },
     {
       nombre: "Puente de cadera asistido",
       duracion: "3 series de 8 repeticiones",
       nivel: "Moderado",
       objetivo: "Fortalecer glúteos y zona lumbar baja.",
-      recomendaciones: "Realizar sobre superficie firme, activar abdomen, evitar arqueo excesivo."
+      recomendaciones: "Evitar arqueo excesivo, activar abdomen.",
+      tipoUsuario: "rehabilitacion",
+      videoUrl: "https://www.youtube.com/embed/M-mnbbpJmXI"
     }
   ];
 
-    // null = cerrado, 0 = primer ejercicio, 1 = segundo, 2 = tercero
-  let videoAbierto = null;
+  function cerrarSesion() {
+    localStorage.removeItem("usuario");
+    irALogin();
+  }
 
-  function abrirVideo(indice) {
-    videoAbierto = indice;
+  function abrirVideo(ej) {
+    if (!ej?.videoUrl) return;
+    videoAbierto = ej;
   }
 
   function cerrarVideo() {
     videoAbierto = null;
   }
 
-  function cerrarSesion() {
-    localStorage.removeItem("usuario");
-    if (irALogin) irALogin();
+  async function cargarEjercicios() {
+    cargando = true;
+    error = "";
+    try {
+      const res = await fetch(`${API_BASE}/ejercicios?tipoUsuario=rehabilitacion`);
+      if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
+      const data = await res.json();
+      ejercicios = Array.isArray(data) ? data : [];
+      if (ejercicios.length === 0) ejercicios = fallback;
+    } catch (e) {
+      console.error(e);
+      error = "No se pudieron cargar ejercicios desde el servidor. Mostrando fallback.";
+      ejercicios = fallback;
+    } finally {
+      cargando = false;
+    }
   }
+
+  onMount(() => {
+    const guardado = localStorage.getItem("usuario");
+    usuario = guardado ? JSON.parse(guardado) : null;
+    esAdmin = !!usuario?.esAdmin;
+    cargarEjercicios();
+  });
 </script>
 
 <main class="app">
   <section class="card">
     <header class="header">
       <div>
-        <h1 class="title">Catálogo – Rehabilitación</h1>
-        <p class="subtitle">
-          Ejercicios suaves para acompañar procesos de fisioterapia o recuperación.
-        </p>
+        <h1 class="title">CATÁLOGO – REHABILITACIÓN</h1>
+        <p class="subtitle">Ejercicios suaves para acompañar procesos de recuperación.</p>
       </div>
-      <button class="logout-btn" on:click={cerrarSesion}>
-        Cerrar sesión
-      </button>
+
+      <div class="header-buttons">
+        <button class="btn" on:click={irAPerfil}>Perfil</button>
+
+        {#if esAdmin}
+          <button class="btn add" on:click={irAAgregarEjercicio}>Agregar ejercicio</button>
+        {/if}
+
+        <button class="btn logout" on:click={cerrarSesion}>Cerrar sesión</button>
+      </div>
     </header>
 
+    {#if cargando}
+      <div class="info">Cargando ejercicios...</div>
+    {:else if error}
+      <div class="error">
+        <span>{error}</span>
+        <button class="btn small" on:click={cargarEjercicios}>Reintentar</button>
+      </div>
+    {/if}
+
     <div class="grid">
-            {#each ejercicios as ejercicio, i}
-        <article class="exercise-card" on:click={() => abrirVideo(i)}>
-          <h2>{ejercicio.nombre}</h2>
-          <p class="pill rehab">Nivel: {ejercicio.nivel}</p>
-          <p class="detail"><strong>Duración / series:</strong> {ejercicio.duracion}</p>
-          <p class="detail"><strong>Objetivo:</strong> {ejercicio.objetivo}</p>
-          <p class="detail"><strong>Recomendaciones:</strong> {ejercicio.recomendaciones}</p>
+      {#each ejercicios as ej}
+        <article class="exercise-card" on:click={() => abrirVideo(ej)}>
+          <h2>{ej.nombre}</h2>
+          <p class="pill rehab">NIVEL: {String(ej.nivel || "").toUpperCase()}</p>
+          <p class="detail"><strong>Duración:</strong> {ej.duracion}</p>
+          <p class="detail"><strong>Objetivo:</strong> {ej.objetivo}</p>
+          <p class="detail"><strong>Recomendaciones:</strong> {ej.recomendaciones}</p>
+
+          {#if ej.videoUrl}
+            <p class="hint">▶ Ver video</p>
+          {:else}
+            <p class="hint muted">Sin video</p>
+          {/if}
         </article>
       {/each}
     </div>
   </section>
 
-    {#if videoAbierto !== null}
+  {#if videoAbierto}
     <div class="overlay" on:click={cerrarVideo}>
       <div class="modal" on:click|stopPropagation>
         <button class="close-btn" on:click={cerrarVideo}>✕</button>
-
-        {#if videoAbierto === 0}
-          <h2>Movilidad de cuello</h2>
-          <div class="video-wrapper">
-            <iframe
-              src="https://www.youtube.com/embed/LTkL3IaV8Go"
-              title="Movilidad de cuello"
-              frameborder="0"
-              allowfullscreen
-          ></iframe>
-          </div>
-        {:else if videoAbierto === 1}
-          <h2>Elevación de talones sentado</h2>
-          <div class="video-wrapper">
-            <iframe
-              src="https://www.youtube.com/embed/wRRYk709cYk"
-              title="Elevación de talones sentado"
-              frameborder="0"
-              allowfullscreen
-            ></iframe>
-          </div>
-        {:else if videoAbierto === 2}
-          <h2>Puente de cadera asistido</h2>
-          <div class="video-wrapper">
-            <iframe
-              src="https://www.youtube.com/embed/M-mnbbpJmXI"
-              title="Puente de cadera asistido"
-              frameborder="0"
-              allowfullscreen
-            ></iframe>
-          </div>
-        {/if}
+        <h2>{videoAbierto.nombre}</h2>
+        <div class="video-wrapper">
+          <iframe
+            src={videoAbierto.videoUrl}
+            title={"Video - " + videoAbierto.nombre}
+            frameborder="0"
+            allowfullscreen
+          />
+        </div>
       </div>
     </div>
   {/if}
-
 </main>
 
 <style>
-  .app {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem;
-  }
+  .app { min-height: 100vh; display:flex; align-items:center; justify-content:center; padding:1.5rem; }
+  .card { width:100%; max-width:1100px; background:rgba(15,15,30,.95); border-radius:18px; padding:1.8rem 1.6rem; box-shadow:0 20px 40px rgba(0,0,0,.6); backdrop-filter:blur(16px); border:1px solid rgba(255,255,255,.06); }
+  .header { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; margin-bottom:1.4rem; }
+  .title { margin:0; font-size:1.7rem; letter-spacing:.06em; text-transform:uppercase; }
+  .subtitle { margin:.3rem 0 0; font-size:.95rem; color:#b0b0c0; }
+  .header-buttons { display:flex; gap:.5rem; flex-wrap:wrap; justify-content:flex-end; }
+  .btn { border-radius:999px; padding:.45rem .9rem; border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.06); color:#f1f1ff; font-size:.85rem; cursor:pointer; white-space:nowrap; }
+  .btn:hover { background:rgba(255,255,255,.12); }
+  .btn.logout { border:1px solid rgba(255,120,120,.7); background:rgba(255,80,80,.08); color:#ffb7b7; }
+  .btn.logout:hover { background:rgba(255,80,80,.18); }
+  .btn.add { border:1px solid rgba(125,255,120,.7); background:rgba(80,255,80,.08); color:#b7ffc2ff; }
+  .btn.add:hover { background:rgba(80,255,80,.18); }
+  .btn.small { padding:.35rem .7rem; font-size:.8rem; }
 
-  .card {
-    width: 100%;
-    max-width: 1100px;
-    background: rgba(15, 15, 30, 0.95);
-    border-radius: 18px;
-    padding: 1.8rem 1.6rem;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-  }
+  .info { margin:.6rem 0 1rem; color:#b0b0c0; }
+  .error { margin:.6rem 0 1rem; padding:.8rem 1rem; border-radius:12px; border:1px solid rgba(255,120,120,.35); background:rgba(255,80,80,.10); color:#ffd1d1; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
 
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
-    margin-bottom: 1.4rem;
-  }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:1.2rem; }
+  .exercise-card { background:rgba(255,255,255,.02); border-radius:14px; padding:1rem 1.1rem; border:1px solid rgba(255,255,255,.06); cursor:pointer; transition:transform .15s ease; }
+  .exercise-card:hover { transform: translateY(-2px); }
+  .exercise-card h2 { margin:0 0 .3rem; font-size:1.1rem; }
+  .pill { display:inline-flex; padding:.2rem .6rem; border-radius:999px; font-size:.75rem; text-transform:uppercase; letter-spacing:.06em; margin-bottom:.4rem; }
+  .pill.rehab { background: rgba(28, 153, 255, 0.16); color:#c7e2ff; }
+  .detail { margin:.2rem 0; font-size:.9rem; }
+  .hint { margin-top:.6rem; font-size:.85rem; color:#b7ffc2; }
+  .hint.muted { color:#8a8aa0; }
 
-  .title {
-    margin: 0;
-    font-size: 1.7rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .subtitle {
-    margin: 0.3rem 0 0;
-    font-size: 0.95rem;
-    color: #b0b0c0;
-  }
-
-  .logout-btn {
-    border: 1px solid rgba(255, 120, 120, 0.7);
-    background: rgba(255, 80, 80, 0.08);
-    color: #ffb7b7;
-    border-radius: 999px;
-    padding: 0.4rem 0.9rem;
-    font-size: 0.85rem;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  .logout-btn:hover {
-    background: rgba(255, 80, 80, 0.18);
-  }
-
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 1.2rem;
-  }
-
-  .exercise-card {
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 14px;
-    padding: 1rem 1.1rem;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-  }
-
-  .exercise-card h2 {
-    margin: 0 0 0.3rem;
-    font-size: 1.1rem;
-  }
-
-  .pill {
-    display: inline-flex;
-    padding: 0.2rem 0.6rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 0.4rem;
-  }
-
-  .pill.rehab {
-    background: rgba(28, 153, 255, 0.16);
-    color: #c7e2ff;
-  }
-
-  .detail {
-    margin: 0.2rem 0;
-    font-size: 0.9rem;
-  }
-
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.75);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 50;
-  }
-
-  .modal {
-    width: 90%;
-    max-width: 800px;
-    background: #101020;
-    border-radius: 16px;
-    padding: 1.2rem 1.1rem 1.4rem;
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7);
-    position: relative;
-  }
-
-  .close-btn {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.7rem;
-    border: none;
-    border-radius: 999px;
-    width: 26px;
-    height: 26px;
-    cursor: pointer;
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
-    font-size: 0.9rem;
-  }
-
-  .video-wrapper {
-    position: relative;
-    width: 100%;
-    padding-top: 56.25%; /* 16:9 */
-    margin-top: 0.7rem;
-  }
-
-  .video-wrapper iframe {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    border-radius: 12px;
-  }
-
+  .overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); display:flex; align-items:center; justify-content:center; z-index:50; }
+  .modal { width:90%; max-width:800px; background:#101020; border-radius:16px; padding:1.4rem 1.2rem 1.6rem; position:relative; box-shadow:0 18px 40px rgba(0,0,0,.7); }
+  .close-btn { position:absolute; top:.6rem; right:.8rem; border:none; border-radius:999px; width:28px; height:28px; cursor:pointer; background:rgba(255,255,255,.1); color:#f5f5f5; font-size:.9rem; }
+  .video-wrapper { position:relative; width:100%; padding-top:56.25%; margin-top:.8rem; }
+  .video-wrapper iframe { position:absolute; inset:0; width:100%; height:100%; border-radius:12px; }
 </style>

@@ -1,165 +1,96 @@
-// src/services/api.js
-// Capa de comunicación con el backend (por ahora simulada con MOCK).
-
-// URL base del backend.
-// En local será: http://localhost:8080/api
-// En producción será algo como: https://tu-backend.onrender.com/api
-const API_BASE = "http://localhost:8080/api";
-
-// Bandera para usar datos simulados mientras no existe backend real.
-// Cuando tengas tu backend Spring listo, cambia a false.
-// Ya está en false porque pos ya hay backend
-const USE_MOCK_API = false;
-
 /**
- * Función auxiliar para manejar respuestas HTTP del backend.
- * Si la respuesta no es OK (status 200–299) lanza un error con el texto.
+ * api.js
+ * Funciones para consumir el backend (Railway).
+ * - Maneja JSON
+ * - Maneja errores del backend
+ * - Agrega header X-USER-ID cuando se requiere (admin)
  */
+
+const BASE_URL = "https://techfit-backend-production-d2e3.up.railway.app/api";
+
+/** Lee el usuario guardado en localStorage */
+function getSesion() {
+  try {
+    const raw = localStorage.getItem("usuario");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Convierte links de YouTube a formato embed */
+export function normalizarYoutubeUrl(url) {
+  if (!url) return "";
+
+  let u = String(url).trim();
+
+  // youtu.be/ID -> https://www.youtube.com/embed/ID
+  const short = u.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+  if (short?.[1]) return `https://www.youtube.com/embed/${short[1]}`;
+
+  // youtube.com/watch?v=ID -> embed
+  const watch = u.match(/v=([a-zA-Z0-9_-]+)/);
+  if (watch?.[1]) return `https://www.youtube.com/embed/${watch[1]}`;
+
+  // ya viene embed
+  if (u.includes("/embed/")) return u;
+
+  return u; // fallback (por si ya viene bien)
+}
+
+/** Manejo estándar de respuestas */
 async function handleResponse(res) {
+  const contentType = res.headers.get("content-type") || "";
+  const isJson = contentType.includes("application/json");
+
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "Error en la petición al servidor");
+    const body = isJson ? await res.json().catch(() => ({})) : await res.text().catch(() => "");
+    const msg = body?.message || body?.error || body?.detail || body?.path || body || "Error en la solicitud";
+    throw new Error(msg);
   }
-  return res.json();
+
+  if (res.status === 204) return null; // No Content
+  return isJson ? res.json() : res.text();
 }
 
 /**
- * LOGIN
- * Envía correo y contraseña al backend y devuelve el usuario.
+ * GET /ejercicios?tipoUsuario=general
+ * Regresa lista de ejercicios del tipo solicitado.
  */
-export async function login(correo, contrasena) {
-  if (USE_MOCK_API) {
-    // simulación
-    const stored = localStorage.getItem("usuario");
-    if (!stored) throw new Error("No hay usuario registrado");
-    const u = JSON.parse(stored);
-    if (u.correo === correo && u.contrasena === contrasena) {
-      return u;
-    }
-    throw new Error("Correo o contraseña incorrectos");
-  }
+export async function listarEjercicios(tipoUsuario) {
+  const url = `${BASE_URL}/ejercicios?tipoUsuario=${encodeURIComponent(tipoUsuario)}`;
+  const res = await fetch(url, { method: "GET" });
+  const data = await handleResponse(res);
 
-  const res = await fetch(`${API_BASE}/auth/login`, {
+  // Aseguramos que videoUrl venga normalizado
+  return (data || []).map((e) => ({
+    ...e,
+    // IMPORTANTE: el backend manda "videoUrl" (camelCase)
+    videoUrl: normalizarYoutubeUrl(e.videoUrl || ""),
+  }));
+}
+
+/**
+ * POST /ejercicios  (SOLO ADMIN)
+ * Requiere header X-USER-ID con el id del usuario logueado.
+ */
+export async function crearEjercicio(payload) {
+  const sesion = getSesion();
+  const userId = sesion?.id || sesion?.idUsuario; // por si tu login guarda uno u otro
+
+  const res = await fetch(`${BASE_URL}/ejercicios`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "X-USER-ID": userId ? String(userId) : "",
     },
-    body: JSON.stringify({ correo, contrasena }),
+    body: JSON.stringify(payload),
   });
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "Error al iniciar sesión");
+  const data = await handleResponse(res);
+  // Normalizar videoUrl al regresar
+  if (data && typeof data === "object") {
+    data.videoUrl = normalizarYoutubeUrl(data.videoUrl || "");
   }
-
-  const usuario = await res.json();
-  localStorage.setItem("usuario", JSON.stringify(usuario));
-  return usuario;
-}
-
-
-/**
- * REGISTRO
- * Crea un nuevo usuario en el backend.
- * datos = { nombre, correo, contrasena, tipoUsuario }
- */
-export async function registrarUsuario({ nombre, correo, contrasena, tipoUsuario }) {
-  if (USE_MOCK_API) {
-    // Estas lines son simulacion (para probar el backend chavos)
-    const usuario = { idUsuario: 1, nombre, correo, contrasena, tipoUsuario };
-    localStorage.setItem("usuario", JSON.stringify(usuario));
-    return usuario;
-  }
-
-  // MODO REAL: hablar con el backend
-  const res = await fetch(`${API_BASE}/usuarios`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      nombre,
-      correo,
-      contrasena,
-      tipoUsuario,
-    }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "Error al registrar usuario");
-  }
-
-  const usuarioCreado = await res.json();
-  //Guardar en localStorage:
-  localStorage.setItem("usuario", JSON.stringify(usuarioCreado));
-  return usuarioCreado;
-}
-
-
-/**
- * OBTENER USUARIO POR ID
- */
-export async function obtenerUsuario(id) {
-  if (USE_MOCK_API) {
-    console.log("[MOCK] obtenerUsuario", id);
-    // Leemos desde localStorage como simulación
-    const guardado = localStorage.getItem("usuario");
-    return guardado ? JSON.parse(guardado) : null;
-  }
-
-  const res = await fetch(`${API_BASE}/usuarios/${id}`);
-  return handleResponse(res);
-}
-
-/**
- * ACTUALIZAR USUARIO
- */
-export async function actualizarUsuario(id, datos) {
-  if (USE_MOCK_API) {
-    // MODO MOCK (si algún día lo vuelves a usar)
-    const guardado = localStorage.getItem("usuario");
-    const u = guardado ? JSON.parse(guardado) : {};
-    const actualizado = { ...u, ...datos };
-    localStorage.setItem("usuario", JSON.stringify(actualizado));
-    return actualizado;
-  }
-
-  const res = await fetch(`${API_BASE}/usuarios/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(datos),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    // esto es lo que estás viendo en rojo
-    throw new Error(text || "Error al actualizar usuario");
-  }
-
-  const usuarioActualizado = await res.json();
-  return usuarioActualizado;
-}
-
-/**
- * ELIMINAR USUARIO
- */
-export async function eliminarUsuario(id) {
-  if (USE_MOCK_API) {
-    console.log("[MOCK] eliminarUsuario", id);
-    // En simulación solo borramos localStorage
-    localStorage.removeItem("usuario");
-    return;
-  }
-
-  const res = await fetch(`${API_BASE}/usuarios/${id}`, {
-    method: "DELETE",
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "Error al eliminar usuario");
-  }
+  return data;
 }

@@ -1,141 +1,147 @@
 <script>
-  // Catálogo de ejercicios para usuarios generales de TECHFIT
+  /**
+   * CatalogoGeneral.svelte
+   */
 
-  // Función que viene de App.svelte para volver al login (cerrar sesión)
-  export let irALogin;
-  export let irAAgregarEjercicio
+  import { onMount } from "svelte";
+  import { listarEjercicios } from "../services/api";
 
-  // Lista de ejercicios (datos estáticos por ahora)
-  const ejercicios = [
-    {
-      nombre: "Calentamiento dinámico",
-      duracion: "5 - 10 minutos",
-      nivel: "Principiante",
-      objetivo: "Preparar músculos y articulaciones antes del entrenamiento.",
-      recomendaciones: "Movimiento suave, sin dolor, evitar rebotes bruscos."
-    },
-    {
-      nombre: "Circuito de cuerpo completo",
-      duracion: "20 - 30 minutos",
-      nivel: "Intermedio",
-      objetivo: "Mejorar resistencia y fuerza general.",
-      recomendaciones: "Realizar 3 rondas de 8–10 repeticiones, descansar 1 min entre rondas."
-    },
-    {
-      nombre: "HIIT suave",
-      duracion: "15 - 20 minutos",
-      nivel: "Avanzado",
-      objetivo: "Aumentar capacidad cardiovascular en poco tiempo.",
-      recomendaciones: "Alternar 30s de trabajo y 30s de descanso. No recomendado para principiantes."
-    }
-  ];
+  // Navegación (viene de App.svelte)
+  export let irALogin = null;
+  export let irAPerfil = null;
+  export let irAAgregarEjercicio = null;
 
-    // null | "calentamiento" | "circuito" | "hiit"
+  // Estado
+  let usuario = null;
+  let esAdmin = false;
+
+  let ejercicios = [];
+  let cargando = true;
+  let error = "";
+
+  // Modal video
   let videoAbierto = null;
 
   function cerrarSesion() {
     localStorage.removeItem("usuario");
-    if (irALogin) irALogin();
+    irALogin?.();
   }
 
-  function abrirVideo(tipo) {
-    videoAbierto = tipo;
+  function abrirVideo(ejercicio) {
+    if (!ejercicio?.videoUrl) return;
+    videoAbierto = ejercicio;
   }
 
   function cerrarVideo() {
     videoAbierto = null;
   }
+
+  async function cargar() {
+    cargando = true;
+    error = "";
+    try {
+      ejercicios = await listarEjercicios("general");
+    } catch (e) {
+      console.error(e);
+      error = e.message || "No se pudieron cargar los ejercicios.";
+    } finally {
+      cargando = false;
+    }
+  }
+
+  onMount(async () => {
+    try {
+      const raw = localStorage.getItem("usuario");
+      usuario = raw ? JSON.parse(raw) : null;
+    } catch {
+      usuario = null;
+    }
+
+    esAdmin = !!(usuario?.esAdmin || usuario?.isAdmin || usuario?.es_admin);
+    await cargar();
+  });
 </script>
+
 
 <main class="app">
   <section class="card">
     <header class="header">
       <div>
-        <h1 class="title">Catálogo de ejercicios – General</h1>
+        <h1 class="title">CATÁLOGO DE EJERCICIOS – GENERAL</h1>
         <p class="subtitle">
           Rutinas pensadas para personas sin restricciones médicas importantes.
         </p>
       </div>
+
       <div class="header-buttons">
-        <button class="btn" on:click={irAAgregarEjercicio}>Agregar ejercicio</button>
+        {#if irAPerfil}
+  <button class="btn" on:click={irAPerfil}>Perfil</button>
+{/if}
+
+{#if esAdmin && irAAgregarEjercicio}
+  <button class="btn add" on:click={irAAgregarEjercicio}>
+    Agregar ejercicio
+  </button>
+{/if}
+
+
         <button class="btn logout" on:click={cerrarSesion}>Cerrar sesión</button>
       </div>
     </header>
 
-    <div class="grid">
-      <!-- Card 1 -->
-      <article class="exercise-card" on:click={() => abrirVideo("calentamiento")}>
-        <h2>{ejercicios[0].nombre}</h2>
-        <p class="pill">NIVEL: {ejercicios[0].nivel.toUpperCase()}</p>
-        <p class="detail"><strong>Duración:</strong> {ejercicios[0].duracion}</p>
-        <p class="detail"><strong>Objetivo:</strong> {ejercicios[0].objetivo}</p>
-        <p class="detail">
-          <strong>Recomendaciones:</strong> {ejercicios[0].recomendaciones}
-        </p>
-      </article>
+    {#if cargando}
+      <div class="state">Cargando ejercicios...</div>
+    {:else if error}
+      <div class="state error">
+        {error}
+        <button class="retry" on:click={cargar}>Reintentar</button>
+      </div>
+    {:else if ejercicios.length === 0}
+      <div class="state">No hay ejercicios para mostrar.</div>
+    {:else}
+      <div class="grid">
+        {#each ejercicios as e}
+          <article class="exercise-card" on:click={() => abrirVideo(e)}>
+            <h2>{e.nombre}</h2>
 
-      <!-- Card 2 -->
-      <article class="exercise-card" on:click={() => abrirVideo("circuito")}>
-        <h2>{ejercicios[1].nombre}</h2>
-        <p class="pill">NIVEL: {ejercicios[1].nivel.toUpperCase()}</p>
-        <p class="detail"><strong>Duración:</strong> {ejercicios[1].duracion}</p>
-        <p class="detail"><strong>Objetivo:</strong> {ejercicios[1].objetivo}</p>
-        <p class="detail">
-          <strong>Recomendaciones:</strong> {ejercicios[1].recomendaciones}
-        </p>
-      </article>
+            <p class="pill">
+              NIVEL: {(e.nivel || "").toUpperCase()}
+            </p>
 
-      <!-- Card 3 -->
-      <article class="exercise-card" on:click={() => abrirVideo("hiit")}>
-        <h2>{ejercicios[2].nombre}</h2>
-        <p class="pill">NIVEL: {ejercicios[2].nivel.toUpperCase()}</p>
-        <p class="detail"><strong>Duración:</strong> {ejercicios[2].duracion}</p>
-        <p class="detail"><strong>Objetivo:</strong> {ejercicios[2].objetivo}</p>
-        <p class="detail">
-          <strong>Recomendaciones:</strong> {ejercicios[2].recomendaciones}
-        </p>
-      </article>
-    </div>
+            <p class="detail"><strong>Duración:</strong> {e.duracion}</p>
+            <p class="detail"><strong>Objetivo:</strong> {e.objetivo}</p>
+            <p class="detail">
+              <strong>Recomendaciones:</strong> {e.recomendaciones}
+            </p>
+
+            {#if e.videoUrl}
+              <p class="video-ok">🎬 Ver video</p>
+            {:else}
+              <p class="video-none">Sin video</p>
+            {/if}
+          </article>
+        {/each}
+      </div>
+    {/if}
   </section>
 
   {#if videoAbierto}
-    <!-- Fondo oscuro -->
+    <!-- Overlay -->
     <div class="overlay" on:click={cerrarVideo}>
-      <!-- Popup -->
       <div class="modal" on:click|stopPropagation>
         <button class="close-btn" on:click={cerrarVideo}>✕</button>
 
-        {#if videoAbierto === "calentamiento"}
-          <h2>Calentamiento dinámico</h2>
-          <div class="video-wrapper">
+        <h2 class="modal-title">{videoAbierto.nombre}</h2>
+
+        <div class="video-wrapper">
           <iframe
-            src="https://www.youtube.com/embed/iqBkUGKd4Eo"
-            title="Calentamiento dinámico"
+            src={videoAbierto.videoUrl}
+            title={"Video: " + videoAbierto.nombre}
             frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowfullscreen
           ></iframe>
-          </div>
-        {:else if videoAbierto === "circuito"}
-          <h2>Circuito de cuerpo completo</h2>
-          <div class="video-wrapper">
-            <iframe
-              src="https://www.youtube.com/embed/283i_ivVVYo"
-              title="Circuito de cuerpo completo"
-              frameborder="0"
-              allowfullscreen
-            ></iframe>
-          </div>
-        {:else if videoAbierto === "hiit"}
-          <h2>HIIT suave</h2>
-          <div class="video-wrapper">
-            <iframe
-              src="https://www.youtube.com/embed/K44TJK9iNf8"
-              title="HIIT suave"
-              frameborder="0"
-              allowfullscreen
-          ></iframe>
-          </div>
-        {/if}
+        </div>
       </div>
     </div>
   {/if}
@@ -184,12 +190,15 @@
 
   .header-buttons {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.6rem;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .btn {
     border-radius: 999px;
-    padding: 0.45rem 0.9rem;
+    padding: 0.45rem 0.95rem;
     border: 1px solid rgba(255, 255, 255, 0.15);
     background: rgba(255, 255, 255, 0.06);
     color: #f1f1ff;
@@ -197,34 +206,16 @@
     cursor: pointer;
   }
 
-  .logout-btn {
+  .btn.logout {
     border: 1px solid rgba(255, 120, 120, 0.7);
     background: rgba(255, 80, 80, 0.08);
     color: #ffb7b7;
-    border-radius: 999px;
-    padding: 0.4rem 0.9rem;
-    font-size: 0.85rem;
-    cursor: pointer;
-    white-space: nowrap;
   }
 
-  .logout-btn:hover {
-    background: rgba(255, 80, 80, 0.18);
-  }
-
-  .Agregar-btn{
+  .btn.add {
     border: 1px solid rgba(125, 255, 120, 0.7);
     background: rgba(80, 255, 80, 0.08);
     color: #b7ffc2ff;
-    border-radius: 999px;
-    padding: 0.4rem 0.9rem;
-    font-size: 0.85rem;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  .Agregar-btn:hover {
-    background: rgba(80, 255, 80, 0.18);
   }
 
   .grid {
@@ -238,6 +229,7 @@
     border-radius: 14px;
     padding: 1rem 1.1rem;
     border: 1px solid rgba(255, 255, 255, 0.06);
+    cursor: pointer;
   }
 
   .exercise-card h2 {
@@ -262,7 +254,40 @@
     font-size: 0.9rem;
   }
 
-  /* === POPUP === */
+  .video-none {
+    margin-top: 0.8rem;
+    opacity: 0.7;
+  }
+
+  .video-ok {
+    margin-top: 0.8rem;
+    opacity: 0.95;
+  }
+
+  .state {
+    padding: 1rem;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.03);
+  }
+
+  .state.error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .retry {
+    border-radius: 12px;
+    padding: 0.45rem 0.8rem;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.06);
+    color: #f1f1ff;
+    cursor: pointer;
+  }
+
+  /* Modal */
   .overlay {
     position: fixed;
     inset: 0;
@@ -271,11 +296,12 @@
     align-items: center;
     justify-content: center;
     z-index: 50;
+    padding: 1rem;
   }
 
   .modal {
-    width: 90%;
-    max-width: 800px;
+    width: 95%;
+    max-width: 900px;
     background: #101020;
     border-radius: 16px;
     padding: 1.4rem 1.2rem 1.6rem;
@@ -283,9 +309,8 @@
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7);
   }
 
-  .modal h2 {
-    margin-top: 0;
-    margin-bottom: 0.8rem;
+  .modal-title {
+    margin: 0 0 0.8rem;
   }
 
   .close-btn {
@@ -305,8 +330,8 @@
   .video-wrapper {
     position: relative;
     width: 100%;
-    padding-top: 56.25%; /* 16:9 */
-    margin-top: 0.8rem;
+    padding-top: 56.25%;
+    margin-top: 0.6rem;
   }
 
   .video-wrapper iframe {

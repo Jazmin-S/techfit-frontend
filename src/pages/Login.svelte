@@ -1,112 +1,71 @@
 <script>
-  // Seguimos usando la API mock que ya tienes. NO tocamos la conexión real.
   import { login as loginApi } from "../services/api";
+  import { guardarUsuario } from "../services/session";
 
-  // Funciones que vienen de App.svelte para cambiar de pantalla
   export let irARegistro;
   export let irAPerfil;
   export let irACatalogoGeneral;
   export let irACatalogoRehabilitacion;
   export let irACatalogoAdultoMayor;
+  export let irAAdmin; // NUEVO
 
-  // Datos del formulario
   let correo = "";
   let contrasena = "";
-  let tipoUsuario = "general"; // nuevo campo
   let error = "";
 
-  // Enviar el formulario de login
-  async function handleSubmit(event) {
-    event.preventDefault();
+  async function handleSubmit(e) {
+    e.preventDefault();
     error = "";
 
-    if (!correo || !contrasena) {
-      error = "Todos los campos son obligatorios.";
-      return;
-    }
-
     try {
-      // Llamamos a la función de login (mock por ahora)
-      const usuarioBackend = await loginApi(correo, contrasena);
+      const usuario = await loginApi(correo, contrasena);
 
-      // Mezclamos lo que regrese el backend/mock con el tipo elegido en el login.
-      const usuario = {
-        ...usuarioBackend,
-        tipoUsuario, // sobrescribe o añade
-      };
+      // Guardamos la sesión completa (incluye tipoUsuario y esAdmin)
+      guardarUsuario(usuario);
 
-      // Guardamos el usuario en localStorage
-      localStorage.setItem("usuario", JSON.stringify(usuario));
-
-      // Y ahora decidimos a qué catálogo mandar según el tipo elegido
-      if (tipoUsuario === "general" && irACatalogoGeneral) {
-        irACatalogoGeneral();
-      } else if (tipoUsuario === "rehabilitacion" && irACatalogoRehabilitacion) {
-        irACatalogoRehabilitacion();
-      } else if (tipoUsuario === "adulto_mayor" && irACatalogoAdultoMayor) {
-        irACatalogoAdultoMayor();
-      } else if (irAPerfil) {
-        // Si por alguna razón no hay callback, al menos vamos a Perfil
-        irAPerfil();
+      // Si es admin, puedes mandarlo directo al panel admin (opcional)
+      if (usuario.esAdmin && irAAdmin) {
+        irAAdmin();
+        return;
       }
-    } catch (e) {
-      console.error(e);
-      error = e.message || "No se pudo iniciar sesión.";
-    }
-  }
 
-  function handleIrARegistro() {
-    if (irARegistro) irARegistro();
+      // Navegación automática según tipoUsuario REAL del backend
+      if (usuario.tipoUsuario === "rehabilitacion") {
+        irACatalogoRehabilitacion?.();
+      } else if (usuario.tipoUsuario === "adulto_mayor") {
+        irACatalogoAdultoMayor?.();
+      } else {
+        irACatalogoGeneral?.();
+      }
+    } catch (err) {
+      error = err.message || "No se pudo iniciar sesión.";
+    }
   }
 </script>
 
 <main class="app">
   <section class="card">
     <h1 class="title">TECHFIT</h1>
-    <p class="subtitle">Inicia sesión para ver tu catálogo de ejercicios</p>
+    <p class="subtitle">Inicia sesión</p>
 
-    {#if error}
-      <p class="error">{error}</p>
-    {/if}
+    {#if error}<p class="error">{error}</p>{/if}
 
-    <form on:submit={handleSubmit} class="form">
+    <form class="form" on:submit={handleSubmit}>
       <label>
-        Correo electrónico
-        <input
-          type="email"
-          bind:value={correo}
-          required
-          placeholder="tu@correo.com"
-        />
+        Correo
+        <input type="email" bind:value={correo} required />
       </label>
 
       <label>
         Contraseña
-        <input
-          type="password"
-          bind:value={contrasena}
-          required
-          minlength="8"
-          placeholder="••••••••"
-        />
+        <input type="password" bind:value={contrasena} required minlength="3" />
       </label>
 
-      <label>
-        Tipo de usuario
-        <select bind:value={tipoUsuario}>
-          <option value="general">General</option>
-          <option value="rehabilitacion">Rehabilitación</option>
-          <option value="adulto_mayor">Adulto mayor</option>
-        </select>
-      </label>
-
-      <button type="submit" class="primary-btn">
-        Entrar a mi catálogo
-      </button>
+      <button class="primary-btn" type="submit">Entrar</button>
     </form>
 
-    <button type="button" class="secondary-btn" on:click={handleIrARegistro}>
-      Crear cuenta nueva
+    <button class="secondary-btn" type="button" on:click={() => irARegistro?.()}>
+      Crear cuenta
     </button>
   </section>
 </main>

@@ -1,109 +1,102 @@
 <script>
-  // Pantallas existentes
   import Login from "./pages/Login.svelte";
   import Registro from "./pages/Registro.svelte";
   import Perfil from "./pages/Perfil.svelte";
 
-  // Nuevos catálogos
   import CatalogoGeneral from "./pages/CatalogoGeneral.svelte";
   import CatalogoRehabilitacion from "./pages/CatalogoRehabilitacion.svelte";
   import CatalogoAdultoMayor from "./pages/CatalogoAdultoMayor.svelte";
+
   import AgregarEjercicio from "./pages/AgregarEjercicio.svelte";
+  import Dashboard from "./pages/Dashboard.svelte";
 
-  // Navbar global
-  import Navbar from "./components/Navbar.svelte";
+  import { obtenerUsuario, esAdmin } from "./services/session";
 
-  // "login" | "registro" | "perfil" | "catalogoGeneral" | "catalogoRehabilitacion" | "catalogoAdultoMayor"
-  let paginaActual = "catalogoGeneral";
+  let pagina = "login";
 
-  function irALogin() {
-    paginaActual = "login";
+  // ✅ Si ya hay sesión al recargar
+  const usuarioSesion = obtenerUsuario();
+  if (usuarioSesion) {
+    if (esAdmin(usuarioSesion)) {
+      pagina = "dashboard";
+    } else {
+      if (usuarioSesion.tipoUsuario === "rehabilitacion") pagina = "rehabilitacion";
+      else if (usuarioSesion.tipoUsuario === "adulto_mayor") pagina = "adulto_mayor";
+      else pagina = "general";
+    }
   }
 
-  function irARegistro() {
-    paginaActual = "registro";
-  }
+  // Navegación
+  const irALogin = () => (pagina = "login");
+  const irARegistro = () => (pagina = "registro");
+  const irAPerfil = () => (pagina = "perfil");
 
-  function irAPerfil() {
-    paginaActual = "perfil";
-  }
+  const irAGeneral = () => (pagina = "general");
+  const irARehabilitacion = () => (pagina = "rehabilitacion");
+  const irAAdultoMayor = () => (pagina = "adulto_mayor");
 
-  function irACatalogoGeneral() {
-    paginaActual = "catalogoGeneral";
-  }
+  const irAAdmin = () => (pagina = "admin");
+  const irADashboard = () => (pagina = "dashboard");
 
-  function irACatalogoRehabilitacion() {
-    paginaActual = "catalogoRehabilitacion";
-  }
-
-  function irACatalogoAdultoMayor() {
-    paginaActual = "catalogoAdultoMayor";
-  }
-
-  function irAAgregarEjercicio(){
-    paginaActual = "agregarEjercicio";
-  }
-
-  function volverDesdeAgregarEjercicio() {
-    paginaActual = "catalogoGeneral";
-}
-
+  // ✅ Función para cambiar página desde cualquier componente
+  const cambiarPagina = (nuevaPagina) => {
+    pagina = nuevaPagina;
+  };
 </script>
 
-<div class="root">
-  {#if paginaActual !== "login" && paginaActual !== "registro"}
-    <!-- Navbar no se muestra en login ni en registro -->
-    <Navbar
-      {paginaActual}
-      irALogin={irALogin}
-      irAPerfil={irAPerfil}
-      irACatalogoGeneral={irACatalogoGeneral}
-      irACatalogoRehabilitacion={irACatalogoRehabilitacion}
-      irACatalogoAdultoMayor={irACatalogoAdultoMayor}
-    />
-  {/if}
+{#if pagina === "login"}
+  <Login
+    irARegistro={irARegistro}
+    irAPerfil={irAPerfil}
+    irACatalogoGeneral={irAGeneral}
+    irACatalogoRehabilitacion={irARehabilitacion}
+    irACatalogoAdultoMayor={irAAdultoMayor}
+    irAAdmin={irADashboard}
+  />
 
-  <div class="main">
-    {#if paginaActual === "login"}
-      <Login
-        irARegistro={irARegistro}
-        irAPerfil={irAPerfil}
-        irACatalogoGeneral={irACatalogoGeneral}
-        irACatalogoRehabilitacion={irACatalogoRehabilitacion}
-        irACatalogoAdultoMayor={irACatalogoAdultoMayor}
-        irAAgregarEjercicio={irAAgregarEjercicio}
-      />
+{:else if pagina === "registro"}
+  <Registro irALogin={irALogin} />
 
-    {:else if paginaActual === "registro"}
-      <Registro irALogin={irALogin} />
+{:else if pagina === "perfil"}
+  <Perfil
+    irALogin={irALogin}
+    irAGeneral={irAGeneral}
+    irADashboard={irADashboard}
+  />
 
-    {:else if paginaActual === "perfil"}
-      <Perfil irALogin={irALogin} />
 
-    {:else if paginaActual === "catalogoGeneral"}
-      <CatalogoGeneral irALogin={irALogin}
-       irAAgregarEjercicio={irAAgregarEjercicio} />
 
-    {:else if paginaActual === "catalogoRehabilitacion"}
-      <CatalogoRehabilitacion irALogin={irALogin} />
+{:else if pagina === "dashboard"}
+  <Dashboard
+    irALogin={irALogin}
+    irAPerfil={irAPerfil}
+    irAGeneral={irAGeneral}
+    irARehabilitacion={irARehabilitacion}
+    irAAdultoMayor={irAAdultoMayor}
+    irAAdmin={irAAdmin}
+  />
 
-    {:else if paginaActual === "catalogoAdultoMayor"}
-      <CatalogoAdultoMayor irALogin={irALogin} />
+{:else if pagina === "general"}
+  <CatalogoGeneral
+    irALogin={irALogin}
+    irAPerfil={irAPerfil}
+    irAAgregarEjercicio={irAAdmin}
+  />
 
-    {:else if paginaActual === "agregarEjercicio"}
-      <AgregarEjercicio volver={volverDesdeAgregarEjercicio} />
-    {/if}
-  </div>
-</div>
+{:else if pagina === "rehabilitacion"}
+  <CatalogoRehabilitacion
+    irALogin={irALogin}
+    irAPerfil={irAPerfil}
+    irAAgregarEjercicio={irAAdmin}
+  />
 
-<style>
-  .root {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
+{:else if pagina === "adulto_mayor"}
+  <CatalogoAdultoMayor
+    irALogin={irALogin}
+    irAPerfil={irAPerfil}
+    irAAgregarEjercicio={irAAdmin}
+  />
 
-  .main {
-    flex: 1;
-  }
-</style>
+{:else if pagina === "admin"}
+  <AgregarEjercicio irALogin={irALogin} />
+{/if}
