@@ -27,6 +27,16 @@
     }
   ];
 
+  // null = cerrado, 0 = primer ejercicio, 1 = segundo, 2 = tercero
+  let videoAbierto = null;
+    function abrirVideo(indice) {
+    videoAbierto = indice;
+  }
+
+  function cerrarVideo() {
+    videoAbierto = null;
+  }
+
   function cerrarSesion() {
     localStorage.removeItem("usuario");
     if (irALogin) irALogin();
@@ -48,17 +58,58 @@
     </header>
 
     <div class="grid">
-      {#each ejercicios as ejercicio}
-        <article class="exercise-card">
-          <h2>{ejercicio.nombre}</h2>
-          <p class="pill senior">Nivel: {ejercicio.nivel}</p>
-          <p class="detail"><strong>Duración / series:</strong> {ejercicio.duracion}</p>
-          <p class="detail"><strong>Objetivo:</strong> {ejercicio.objetivo}</p>
-          <p class="detail"><strong>Recomendaciones:</strong> {ejercicio.recomendaciones}</p>
-        </article>
+      {#each ejercicios as ejercicio, i}
+          <article class="exercise-card" on:click={() => abrirVideo(i)}>
+              <h2>{ejercicio.nombre}</h2>
+              <p class="pill senior">Nivel: {ejercicio.nivel}</p>
+              <p class="detail"><strong>Duración / series:</strong> {ejercicio.duracion}</p>
+              <p class="detail"><strong>Objetivo:</strong> {ejercicio.objetivo}</p>
+              <p class="detail"><strong>Recomendaciones:</strong> {ejercicio.recomendaciones}</p>
+          </article>
       {/each}
     </div>
   </section>
+
+  {#if videoAbierto !== null}
+    <div class="overlay" on:click={cerrarVideo}>
+      <div class="modal" on:click|stopPropagation>
+        <button class="close-btn" on:click={cerrarVideo}>✕</button>
+
+        {#if videoAbierto === 0}
+          <h2>Video – Caminata suave en lugar seguro</h2>
+          <div class="video-wrapper">
+            <iframe
+              src="https://www.youtube.com/embed/VIDEO_ID_1"
+              title="Caminata suave en lugar seguro"
+              frameborder="0"
+              allowfullscreen
+            ></iframe>
+          </div>
+        {:else if videoAbierto === 1}
+          <h2>Video – Sentarse y levantarse de la silla</h2>
+          <div class="video-wrapper">
+            <iframe
+              src="https://www.youtube.com/embed/VIDEO_ID_2"
+              title="Sentarse y levantarse de la silla"
+              frameborder="0"
+              allowfullscreen
+            ></iframe>
+          </div>
+        {:else if videoAbierto === 2}
+          <h2>Video – Movimiento de brazos con botellas ligeras</h2>
+          <div class="video-wrapper">
+            <iframe
+              src="https://www.youtube.com/embed/VIDEO_ID_3"
+              title="Movimiento de brazos con botellas ligeras"
+              frameborder="0"
+              allowfullscreen
+            ></iframe>
+          </div>
+        {/if}
+      </div>
+    </div>
+  {/if}
+
 </main>
 
 <style>
@@ -154,4 +205,54 @@
     margin: 0.2rem 0;
     font-size: 0.9rem;
   }
+
+    .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+
+  .modal {
+    width: 90%;
+    max-width: 800px;
+    background: #101020;
+    border-radius: 16px;
+    padding: 1.2rem 1.1rem 1.4rem;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7);
+    position: relative;
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.7rem;
+    border: none;
+    border-radius: 999px;
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-size: 0.9rem;
+  }
+
+  .video-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; /* 16:9 */
+    margin-top: 0.7rem;
+  }
+
+  .video-wrapper iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+  }
+
 </style>
