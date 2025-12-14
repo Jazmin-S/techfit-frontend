@@ -1,15 +1,13 @@
 <script>
   import { onMount } from "svelte";
-  import { listarEjercicios, cerrarSesion } from "../services/api";
+  import { listarEjercicios } from "../services/api";
 
-  // Navegación (viene de App.svelte o router)
+  // Navegación (las funciones vienen de App.svelte)
   export let irALogin;
   export let irAPerfil;
   export let irAAgregarEjercicio;
 
-  // Si tu backend usa otro texto, cámbialo aquí:
-  const TIPO_USUARIO = "adultoMayor";
-
+  // Estado
   let usuario = null;
   let esAdmin = false;
 
@@ -20,24 +18,9 @@
   // Modal video
   let videoAbierto = null;
 
-  function go(fn) {
-    if (typeof fn === "function") fn();
-  }
-
-  function cargarSesion() {
-    try {
-      usuario = JSON.parse(localStorage.getItem("usuario"));
-    } catch {
-      usuario = null;
-    }
-
-    // Ajusta esto si tu backend usa otro campo para rol
-    esAdmin = !!usuario && usuario.tipoUsuario === "admin";
-  }
-
-  function salir() {
-    cerrarSesion();
-    go(irALogin);
+  function cerrarSesion() {
+    localStorage.removeItem("usuario");
+    irALogin?.();
   }
 
   function abrirVideo(ejercicio) {
@@ -49,142 +32,301 @@
     videoAbierto = null;
   }
 
-  async function cargarEjercicios() {
-    cargando = true;
-    error = "";
+  onMount(async () => {
     try {
-      ejercicios = await listarEjercicios(TIPO_USUARIO);
+      const data = localStorage.getItem("usuario");
+      if (data) {
+        usuario = JSON.parse(data);
+        esAdmin = usuario?.rol === "ADMIN";
+      }
+
+      // 👇 IMPORTANTE: debe coincidir con tu backend
+      ejercicios = await listarEjercicios("adulto_mayor");
     } catch (e) {
-      error = e?.message || "Error al cargar ejercicios";
-      ejercicios = [];
+      console.error(e);
+      error = "No se pudieron cargar los ejercicios";
     } finally {
       cargando = false;
     }
-  }
-
-  onMount(() => {
-    cargarSesion();
-    cargarEjercicios();
   });
 </script>
 
-<div class="page">
-  <header class="topbar">
-    <div class="left">
-      <h1>Catálogo Adulto Mayor</h1>
-      <p class="sub">Ejercicios cargados desde el backend</p>
-    </div>
+<header class="top-bar">
+  <h1>Ejercicios · Adulto Mayor</h1>
 
-    <div class="actions">
-      <button class="btn ghost" type="button" on:click={() => go(irAPerfil)}>
-        Perfil
+  <div class="acciones">
+    <button class="btn" on:click={() => irAPerfil?.()}>Perfil</button>
+
+    {#if esAdmin}
+      <button class="btn btn-admin" on:click={() => irAAgregarEjercicio?.()}>
+        + Agregar ejercicio
       </button>
-
-      {#if esAdmin}
-        <button class="btn" type="button" on:click={() => go(irAAgregarEjercicio)}>
-          Agregar ejercicio
-        </button>
-      {/if}
-
-      <button class="btn danger" type="button" on:click={salir}>
-        Cerrar sesión
-      </button>
-    </div>
-  </header>
-
-  {#if error}
-    <div class="alert error">{error}</div>
-  {/if}
-
-  {#if cargando}
-    <div class="loading">Cargando ejercicios...</div>
-  {:else}
-    {#if ejercicios.length === 0}
-      <div class="empty">
-        No hay ejercicios todavía para <b>{TIPO_USUARIO}</b>.
-      </div>
-    {:else}
-      <section class="grid">
-        {#each ejercicios as e (e.id)}
-          <article class="card">
-            <div class="card-head">
-              <h3 class="title">{e.nombre}</h3>
-
-              {#if e.videoUrl}
-                <button class="btn small" type="button" on:click={() => abrirVideo(e)}>
-                  Ver video
-                </button>
-              {/if}
-            </div>
-
-            {#if e.descripcion}
-              <p class="desc">{e.descripcion}</p>
-            {/if}
-
-            <div class="meta">
-              {#if e.duracionMinutos}
-                <span>{e.duracionMinutos} min</span>
-              {/if}
-              {#if e.nivel}
-                <span>Nivel: {e.nivel}</span>
-              {/if}
-            </div>
-          </article>
-        {/each}
-      </section>
     {/if}
+
+    <button class="btn btn-salir" on:click={cerrarSesion}>Salir</button>
+  </div>
+</header>
+
+<div class="page">
+  {#if cargando}
+    <p class="estado">Cargando ejercicios...</p>
+  {:else if error}
+    <p class="error">{error}</p>
+  {:else if ejercicios.length === 0}
+    <p class="estado">No hay ejercicios registrados</p>
+  {:else}
+    <section class="grid">
+      {#each ejercicios as e}
+        <article class="card">
+          <h3 class="titulo">{e.nombre}</h3>
+
+          <div class="info">
+            <p><strong>Duración:</strong> {e.duracion}</p>
+            <p><strong>Nivel:</strong> {e.nivel}</p>
+            <p><strong>Objetivo:</strong> {e.objetivo}</p>
+
+            {#if e.recomendaciones}
+              <p class="reco">{e.recomendaciones}</p>
+            {/if}
+          </div>
+
+          {#if e.videoUrl}
+            <button class="btn video" on:click={() => abrirVideo(e)}>
+              ▶ Ver video
+            </button>
+          {/if}
+        </article>
+      {/each}
+    </section>
   {/if}
 </div>
 
 {#if videoAbierto}
-  <div class="modal-backdrop" role="presentation" on:click={cerrarVideo}>
-    <div
-      class="modal"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Video ejercicio"
-      on:click|stopPropagation
-    >
-      <div class="modal-head">
+  <div class="modal" on:click={cerrarVideo}>
+    <div class="modal-contenido" on:click|stopPropagation>
+      <div class="modal-header">
         <h2>{videoAbierto.nombre}</h2>
-        <button class="btn ghost" type="button" on:click={cerrarVideo}>Cerrar</button>
+        <button class="btn btn-cerrar" on:click={cerrarVideo}>✕</button>
       </div>
 
       <div class="video-wrap">
         <iframe
-          title="Video"
           src={videoAbierto.videoUrl}
+          title="Video de ejercicio"
+          frameborder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowfullscreen
-        ></iframe>
+        />
       </div>
     </div>
   </div>
 {/if}
 
 <style>
-  .page { padding: 24px; color: #eaeaea; }
-  .topbar { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:16px; }
-  .left h1 { margin:0; font-size:28px; }
-  .sub { margin:6px 0 0; opacity:.75; }
-  .actions { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
-  .btn { padding:10px 14px; border-radius:10px; border:1px solid rgba(255,255,255,.15); background: rgba(255,255,255,.08); color:#fff; cursor:pointer; }
-  .btn:hover { background: rgba(255,255,255,.12); }
-  .btn.ghost { background: transparent; }
-  .btn.danger { border-color: rgba(255,80,80,.35); background: rgba(255,80,80,.12); }
-  .btn.small { padding:8px 10px; font-size: 13px; }
-  .alert { padding:12px 14px; border-radius:12px; margin:12px 0; }
-  .alert.error { background: rgba(255,80,80,.12); border: 1px solid rgba(255,80,80,.35); }
-  .loading, .empty { opacity:.8; padding:16px 0; }
-  .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:14px; margin-top:12px; }
-  .card { border-radius:16px; border:1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); padding:14px; }
-  .card-head { display:flex; justify-content:space-between; align-items:center; gap:10px; }
-  .title { margin:0; font-size:18px; }
-  .desc { margin:10px 0 0; opacity:.85; }
-  .meta { display:flex; gap:10px; opacity:.75; margin-top:10px; font-size:13px; }
-  .modal-backdrop { position:fixed; inset:0; background: rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; padding:16px; }
-  .modal { width:min(900px, 96vw); border-radius:18px; border:1px solid rgba(255,255,255,.12); background: rgba(20,20,30,.98); padding:14px; }
-  .modal-head { display:flex; justify-content:space-between; align-items:center; gap:10px; }
-  .video-wrap { margin-top:12px; }
-  iframe { width:100%; aspect-ratio: 16/9; border:0; border-radius:14px; }
+  /* ===== Fondo general (por si no tienes un global) ===== */
+  :global(body) {
+    margin: 0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  }
+
+  /* ===== Barra superior ===== */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 18px 10px;
+  }
+
+  .top-bar h1 {
+    margin: 0;
+    font-size: clamp(22px, 3vw, 46px);
+    line-height: 1.1;
+    color: #fff;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.35);
+  }
+
+  .acciones {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  /* ===== Contenedor ===== */
+  .page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 18px 18px 40px;
+  }
+
+  /* ===== Botones ===== */
+  .btn {
+    padding: 9px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.15s;
+  }
+
+  .btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  .btn-admin {
+    background: rgba(255, 255, 255, 0.14);
+  }
+
+  .btn-salir {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* ===== Estados ===== */
+  .estado,
+  .error {
+    padding: 14px 18px;
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+
+  .error {
+    color: #ffb4b4;
+  }
+
+  /* ===== Grid responsive ===== */
+  .grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    align-items: stretch;
+  }
+
+  /* ===== Card ===== */
+  .card {
+    border-radius: 18px;
+    padding: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(6px);
+    color: #fff;
+
+    display: flex;
+    flex-direction: column;
+    min-height: 290px;
+  }
+
+  .titulo {
+    margin: 0 0 10px 0;
+    font-size: 22px;
+    line-height: 1.2;
+
+    /* Limita títulos largos a 2 líneas */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1; /* empuja botón al fondo */
+  }
+
+  .card p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.35;
+    opacity: 0.95;
+  }
+
+  .card strong {
+    font-weight: 800;
+    opacity: 1;
+  }
+
+  .reco {
+    opacity: 0.9;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .video {
+    margin-top: 14px;
+    width: fit-content;
+  }
+
+  /* ===== Modal ===== */
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    z-index: 9999;
+  }
+
+  .modal-contenido {
+    width: min(920px, 100%);
+    border-radius: 18px;
+    background: rgba(15, 15, 20, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #fff;
+    padding: 14px;
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 6px 12px;
+  }
+
+  .modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.2;
+  }
+
+  .btn-cerrar {
+    padding: 8px 10px;
+    border-radius: 12px;
+  }
+
+  .video-wrap {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .video-wrap iframe {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 640px) {
+    .top-bar {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .acciones {
+      width: 100%;
+    }
+  }
 </style>
