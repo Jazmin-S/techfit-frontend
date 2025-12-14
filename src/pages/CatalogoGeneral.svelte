@@ -76,13 +76,13 @@
       <div class="header-buttons">
         {#if irAPerfil}
   <button class="btn" on:click={irAPerfil}>Perfil</button>
-{/if}
+        {/if}
 
-{#if esAdmin && irAAgregarEjercicio}
-  <button class="btn add" on:click={irAAgregarEjercicio}>
-    Agregar ejercicio
-  </button>
-{/if}
+        {#if esAdmin && irAAgregarEjercicio}
+          <button class="btn add" on:click={irAAgregarEjercicio}>
+            Agregar ejercicio
+          </button>
+        {/if}
 
 
         <button class="btn logout" on:click={cerrarSesion}>Cerrar sesión</button>
