@@ -1,29 +1,33 @@
 <script>
   /**
    * Dashboard.svelte
-   * Menú principal para ADMIN:
-   * - Ir a catálogos
-   * - Ir a perfil
-   * - Ir a panel admin
-   * - Cerrar sesión
+   * Pantalla tipo menú para el admin
    */
 
+  // Función que usamos para volver al login cuando salimos
   export let irALogin;
 
+  // Funciones de navegación 
   export let irAPerfil;
   export let irAGeneral;
   export let irARehabilitacion;
   export let irAAdultoMayor;
-  export let irAAdmin; // pantalla agregar ejercicio
+  export let irAAdmin; // nos manda a la pantalla de agregar ejercicio
 
-  // Leer usuario actual
+  // Aquí leemos el usuario guardado en localStorage
   const usuario = (() => {
+    // Traemos el string guardado
     const raw = localStorage.getItem("usuario");
+
+    // Intentamos convertirlo a objeto, si falla regresamos null
     try { return raw ? JSON.parse(raw) : null; } catch { return null; }
   })();
 
   function cerrarSesion() {
+    // Borramos el usuario guardado para “cerrar sesión”
     localStorage.removeItem("usuario");
+
+    // Y mandamos al login si la función existe
     irALogin?.();
   }
 </script>
@@ -33,6 +37,8 @@
     <header class="header">
       <div>
         <h1 class="title">TECHFIT</h1>
+
+        <!-- Si tenemos nombre de usuario lo saludamos, sino mostramos un texto genérico -->
         <p class="subtitle">
           {#if usuario?.nombre}
             Hola, <strong>{usuario.nombre}</strong> (Admin) 👋
@@ -42,10 +48,12 @@
         </p>
       </div>
 
+      <!-- Botón para salir y borrar sesión -->
       <button class="btn ghost" on:click={cerrarSesion}>Salir</button>
     </header>
 
     <div class="grid">
+      <!-- Botones para movernos entre pantallas -->
       <button class="tile" on:click={irAPerfil}>
         <h2>Perfil</h2>
         <p>Ver tus datos y sesión.</p>
@@ -66,6 +74,7 @@
         <p>Ejercicios de bajo impacto.</p>
       </button>
 
+      <!-- Panel con botón para agregar ejercicios (solo admin)” -->
       <button class="tile admin" on:click={irAAdmin}>
         <h2>Panel Admin</h2>
         <p>Agregar ejercicios al sistema.</p>
@@ -75,6 +84,7 @@
 </main>
 
 <style>
+  /* Fondo y centrado general de la página */
   .page {
     min-height: 100vh;
     display: grid;
@@ -85,6 +95,7 @@
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
   }
 
+  /* Tarjeta */
   .card {
     width: min(950px, 100%);
     background: rgba(255, 255, 255, 0.06);
@@ -95,6 +106,7 @@
     backdrop-filter: blur(8px);
   }
 
+  /* Encabezado */
   .header {
     display: flex;
     justify-content: space-between;
@@ -108,6 +120,7 @@
   .title { margin: 0; font-size: 30px; }
   .subtitle { margin: 6px 0 0; opacity: 0.85; }
 
+  /* Botón base */
   .btn {
     border-radius: 12px;
     border: 1px solid rgba(255,255,255,0.16);
@@ -119,6 +132,7 @@
   }
   .btn.ghost { background: transparent; }
 
+  /* Grid responsivo, se acomoda solo según el ancho */
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -126,6 +140,7 @@
     margin-top: 14px;
   }
 
+  /* Tarjetas clickeables */
   .tile {
     text-align: left;
     border-radius: 16px;
@@ -139,6 +154,7 @@
   .tile h2 { margin: 0 0 6px; font-size: 18px; }
   .tile p { margin: 0; opacity: 0.85; }
 
+  /* La opción de admin resalta un más */
   .tile.admin {
     border-color: rgba(120, 160, 255, 0.35);
     background: rgba(120, 160, 255, 0.12);

@@ -167,36 +167,54 @@ export async function actualizarUsuario(id, { nombre, tipoUsuario, contrasena })
 //   EJERCICIOS
 
 // Obtiene la lista de ejercicios según el tipo de usuario
-
 export async function listarEjercicios(tipoUsuario) {
+  // Armamos la URL con el tipo de usuario para que el backend nos filtre
   const url = `${BASE_URL}/ejercicios?tipoUsuario=${encodeURIComponent(tipoUsuario)}`;
+
+  // Hacemos la petición al backend para traer la lista
   const res = await fetch(url, { method: "GET" });
+
+  // Leemos la respuesta
   const data = await handleResponse(res);
 
+  // Regresamos una lista 
   return (data || []).map((e) => ({
-    ...e,
-    videoUrl: normalizarYoutubeUrl(e.videoUrl || ""),
+    ...e, 
+    videoUrl: normalizarYoutubeUrl(e.videoUrl || ""), // dejamos el link listo para usarse
   }));
 }
 
 // Crea un nuevo ejercicio (solo administradores)
 export async function crearEjercicio(payload) {
+  // Obtenemos la sesión que tengamos guardada
   const sesion = getSesion();
+
+  // Agarramos el id del usuario
   const userId = sesion?.id || sesion?.idUsuario;
 
+  // Hacemos la petición al backend para guardar el ejercicio
   const res = await fetch(`${BASE_URL}/ejercicios`, {
     method: "POST",
     headers: {
+      // Le decimos que mandamos JSON
       "Content-Type": "application/json",
+
+      // Mandamos el id del usuario para que el backend sepa quién está intentando crear
       "X-USER-ID": userId ? String(userId) : "",
     },
+
+    // Convertimos el payload a texto JSON para enviarlo
     body: JSON.stringify(payload),
   });
 
+  // Aquí procesamos la respuesta
   const data = await handleResponse(res);
 
+  // Si la respuesta trae un objeto, arreglamos el videoUrl por si viene raro
   if (data && typeof data === "object") {
     data.videoUrl = normalizarYoutubeUrl(data.videoUrl || "");
   }
+
+  // Regresamos lo que respondió el backend (el ejercicio creado)
   return data;
 }

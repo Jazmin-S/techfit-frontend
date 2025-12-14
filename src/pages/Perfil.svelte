@@ -11,9 +11,8 @@
   export let irALogin;
   // Función para ir al catálogo general
   export let irAGeneral;
-
+  // Función opcional para volver al dashboard
   export let irADashboard = null;
-
 
   // Datos del usuario que se mostrarán en el perfil
   let usuario = {
@@ -27,8 +26,7 @@
   let error = "";       // mensaje de error
   let mensaje = "";     // mensaje de éxito
 
-  // Función para volver al Catálogo General
-    // Función para volver al Catálogo General (o al Dashboard si es admin y existe)
+  // Función para volver al Catálogo General (o al Dashboard si es admin )
   function volverCatalogo() {
     console.log("Volviendo...");
 
@@ -37,7 +35,7 @@
     let u = null;
     try { u = raw ? JSON.parse(raw) : null; } catch { u = null; }
 
-    // Si es admin y existe función dashboard, regresa a dashboard (opcional)
+    // Si es admin función para regresar a dashboard
     if (u?.esAdmin && typeof irADashboard === "function") {
       irADashboard();
       return;
@@ -67,33 +65,37 @@
         return;
       }
 
+      // Convertimos lo que estaba guardado a un objeto de JavaScript
       const datos = JSON.parse(guardado);
+        // Aquí armamos el objeto usuario con lo que venga guardado
+        // Si falta algo, ponemos un valor por default
+        usuario = {
+          id: datos.idUsuario || 1,                 // guardamos el id
+          nombre: datos.nombre || "",               // guardamos el nombre
+          correo: datos.correo || "",               // guardamos el correo
+          tipoUsuario: datos.tipoUsuario || "general" // guardamos el tipo 
+        };
 
-      usuario = {
-        id: datos.idUsuario || 1, // en mock usamos 1
-        nombre: datos.nombre || "",
-        correo: datos.correo || "",
-        tipoUsuario: datos.tipoUsuario || "general",
-      };
+      } catch (e) {
+        // Si algo falla al leer o convertir los datos, lo mostramos en consola
+        console.error(e);
 
-      // Más adelante podríamos refrescar desde la API real:
-      // const desdeApi = await obtenerUsuario(usuario.id);
-      // usuario = { ...usuario, ...desdeApi };
-    } catch (e) {
-      console.error(e);
-      error = "No se pudieron leer los datos del usuario.";
-    } finally {
-      cargando = false;
-    }
-  });
+        // Enseñamos un mensaje al usuario del error
+        error = "No se pudieron leer los datos del usuario.";
+      } finally {
+        // Al final, haya salido bien o mal, quitamos el estado de cargando
+        cargando = false;
+      }
+    });
 
-  // Guarda los cambios del perfil (por ahora en mock/localStorage)
+  // Guarda los cambios del perfil
   async function guardarCambios(event) {
     event.preventDefault();
     mensaje = "";
     error = "";
 
     try {
+      // Variable para guardar los nuevos datos que actualiza el usuario
       const actualizado = await actualizarUsuario(usuario.id, {
         nombre: usuario.nombre,
         correo: usuario.correo,
@@ -109,7 +111,7 @@
     }
   }
 
-  // Elimina la cuenta del usuario (simulado)
+  // Eliminar la cuenta del usuario
   async function eliminarCuenta() {
     const confirmar = confirm(
       "¿Seguro que deseas eliminar tu cuenta? Esta acción es permanente."
@@ -118,7 +120,7 @@
 
     try {
       await eliminarUsuario(usuario.id);
-      mensaje = "Cuenta eliminada (simulada). Regresando al login.";
+      mensaje = "Cuenta eliminada. Regresando al login.";
 
       // Regresamos al login
       if (irALogin) irALogin();
@@ -132,7 +134,7 @@
 <!-- Vista de la pantalla de perfil -->
 <main class="app">
   <div class="container">
-    <!-- Header con botón de volver -->
+    <!-- Header del sitio con botón de volver -->
     <header class="header">
       <button class="back-btn" on:click={volverCatalogo}>
         <svg class="back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -146,6 +148,7 @@
       </div>
     </header>
 
+    <!-- Panel del perfil -->
     <section class="card">
       <div class="profile-header">
         <div class="avatar">
@@ -163,6 +166,7 @@
           <div class="spinner"></div>
           <p>Cargando datos...</p>
         </div>
+        <!-- Muestra mensajes para posibles errores -->
       {:else}
         {#if error}
           <div class="alert error">
@@ -184,6 +188,7 @@
 
         <!-- Formulario de edición de datos -->
         <form class="form" on:submit={guardarCambios}>
+          <!-- CAmpo de nombre -->
           <div class="form-group">
             <label class="form-label">
               <span class="label-text">Nombre</span>
@@ -197,6 +202,7 @@
             </label>
           </div>
 
+        <!-- Campo para ingresar elcorreo -->
           <div class="form-group">
             <label class="form-label">
               <span class="label-text">Correo electrónico</span>
@@ -210,6 +216,7 @@
             </label>
           </div>
 
+          <!-- Campo para seleccionar el tipo de usuario -->
           <div class="form-group">
             <label class="form-label">
               <span class="label-text">Tipo de usuario</span>
@@ -226,6 +233,7 @@
             </label>
           </div>
 
+          <!-- Boton para guardar cambios -->
           <div class="button-group">
             <button type="submit" class="primary-btn">
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
