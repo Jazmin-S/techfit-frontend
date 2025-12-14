@@ -40,7 +40,7 @@
         esAdmin = usuario?.rol === "ADMIN";
       }
 
-      // 👇 IMPORTANTE: debe coincidir con tu backend
+      // IMPORTANTE: debe coincidir con tu backend
       ejercicios = await listarEjercicios("adulto_mayor");
     } catch (e) {
       console.error(e);
@@ -99,7 +99,7 @@
       {/each}
     </section>
   {/if}
-</div>
+</div>s
 
 {#if videoAbierto}
   <div class="modal" on:click={cerrarVideo}>

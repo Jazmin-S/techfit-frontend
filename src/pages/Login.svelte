@@ -2,42 +2,46 @@
   import { login as loginApi } from "../services/api";
   import { guardarUsuario } from "../services/session";
 
-  export let irARegistro;
-  export let irAPerfil;
-  export let irACatalogoGeneral;
-  export let irACatalogoRehabilitacion;
-  export let irACatalogoAdultoMayor;
-  export let irAAdmin; // NUEVO
+  //exporta funciones de navegacion
+  export let irARegistro; // Para ir a la pantalla de registro
+  export let irAPerfil; // Para ir al perfil del usuario
+  export let irACatalogoGeneral; // Para ir al catálogo general
+  export let irACatalogoRehabilitacion; // Para ir al catálogo de rehabilitación
+  export let irACatalogoAdultoMayor;  // Para ir al catálogo de adultos mayores
+  export let irAAdmin; // Para ir al panel de administración 
 
-  let correo = "";
-  let contrasena = "";
-  let error = "";
+  let correo = ""; // Correo electrónico ingresado por el usuario
+  let contrasena = ""; // Contraseña ingresada por el usuario
+  let error = ""; // Mensaje de error si el login falla
 
+  // Maneja el envío del formulario de login
   async function handleSubmit(e) {
-    e.preventDefault();
-    error = "";
+    e.preventDefault(); // Evita que la página se recargue
+    error = ""; //limpia errores anteriores 
 
     try {
+      // Intenta iniciar sesión con las credenciales
       const usuario = await loginApi(correo, contrasena);
 
-      // Guardamos la sesión completa (incluye tipoUsuario y esAdmin)
+      // Guarda la información del usuario en el almacenamiento local
       guardarUsuario(usuario);
 
-      // Si es admin, puedes mandarlo directo al panel admin (opcional)
+      // Si el usuario es administrador, lo redirige al panel de admin
       if (usuario.esAdmin && irAAdmin) {
         irAAdmin();
         return;
       }
 
-      // Navegación automática según tipoUsuario REAL del backend
+       // Redirige automáticamente según el tipo de usuario
       if (usuario.tipoUsuario === "rehabilitacion") {
-        irACatalogoRehabilitacion?.();
+        irACatalogoRehabilitacion?.(); 
       } else if (usuario.tipoUsuario === "adulto_mayor") {
         irACatalogoAdultoMayor?.();
       } else {
         irACatalogoGeneral?.();
       }
     } catch (err) {
+       // Muestra un mensaje de error si el login falla
       error = err.message || "No se pudo iniciar sesión.";
     }
   }
@@ -48,8 +52,10 @@
     <h1 class="title">TECHFIT</h1>
     <p class="subtitle">Inicia sesión</p>
 
+     <!-- Muestra mensaje de error si existe -->
     {#if error}<p class="error">{error}</p>{/if}
 
+     <!-- Formulario de inicio de sesión -->
     <form class="form" on:submit={handleSubmit}>
       <label>
         Correo
@@ -71,7 +77,7 @@
 </main>
 
 <style>
-  /* Dejamos el mismo estilo bonito que ya tenías */
+
 
   :global(body) {
     margin: 0;

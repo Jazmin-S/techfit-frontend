@@ -1,25 +1,31 @@
 <script>
   import { onMount } from "svelte";
-  import { listarEjercicios } from "../services/api";
+  import { listarEjercicios } from "../services/api"; //importa la lista de ejercicios
 
-  export let irALogin;
-  export let irAPerfil;
-  export let irAAgregarEjercicio;
+  //Funciones de nevagacion 
+  export let irALogin; //Para ir a la pantalla Login
+  export let irAPerfil; //Para ir al perfil del usuario
+  export let irAAgregarEjercicio; //Para agregar nuevo ejercico (solo el admin)
 
-  let usuario = null;
-  let esAdmin = false;
+  //datos del usuario actual
+  let usuario = null; //informacion del usuario desde el localStorage
+  let esAdmin = false; //indice si el usuario tiene permisos de admin
 
-  let ejercicios = [];
-  let cargando = true;
-  let error = "";
+  //estado para manejar lista de ejercicios 
+  let ejercicios = []; //almacena los ejercicios obtenidos del servidor
+  let cargando = true; //muestra el mensaje de "cargando"
+  let error = ""; //muestra mensaje de error si falla la carga
 
-  let videoAbierto = null;
+  //controla el video que se esta reproduciendo en el modal 
+  let videoAbierto = null; 
 
+  //elimina datos de sesion y vuelve a login
   function cerrarSesion() {
     localStorage.removeItem("usuario");
     irALogin?.();
   }
 
+  //abre el video selecionado 
   function abrirVideo(ejercicio) {
     if (!ejercicio?.videoUrl) return;
     videoAbierto = ejercicio;
@@ -29,6 +35,7 @@
     videoAbierto = null;
   }
 
+// Se ejecuta cuando el componente se monta en la página
   onMount(async () => {
     try {
       const data = localStorage.getItem("usuario");
@@ -37,12 +44,13 @@
         esAdmin = usuario?.rol === "ADMIN";
       }
 
+      // Obtiene ejercicios específicos para rehabilitación
       ejercicios = await listarEjercicios("rehabilitacion");
     } catch (e) {
       console.error(e);
       error = "No se pudieron cargar los ejercicios";
     } finally {
-      cargando = false;
+      cargando = false; // Finaliza el estado de carga
     }
   });
 </script>
@@ -51,8 +59,10 @@
   <h1>Ejercicios · Rehabilitación</h1>
 
   <div class="acciones">
+     <!-- Botón para ir al perfil del usuario -->
     <button class="btn" on:click={() => irAPerfil?.()}>Perfil</button>
 
+    <!-- Botón visible solo para administradores -->
     {#if esAdmin}
       <button class="btn btn-admin" on:click={() => irAAgregarEjercicio?.()}>
         + Agregar ejercicio
@@ -71,6 +81,7 @@
   {:else if ejercicios.length === 0}
     <p class="estado">No hay ejercicios registrados</p>
   {:else}
+    <!-- Muestra la lista de ejercicios en formato de tarjetas -->
     <section class="grid">
       {#each ejercicios as e}
         <article class="card">
@@ -81,6 +92,7 @@
             <p><strong>Nivel:</strong> {e.nivel}</p>
             <p><strong>Objetivo:</strong> {e.objetivo}</p>
 
+              <!-- Muestra la lista de ejercicios en formato de tarjetas -->
             {#if e.recomendaciones}
               <p class="reco">{e.recomendaciones}</p>
             {/if}
@@ -97,6 +109,7 @@
   {/if}
 </div>
 
+<!-- Modal que se muestra al reproducir un video -->
 {#if videoAbierto}
   <div class="modal" on:click={cerrarVideo}>
     <div class="modal-contenido" on:click|stopPropagation>
@@ -105,6 +118,7 @@
         <button class="btn btn-cerrar" on:click={cerrarVideo}>✕</button>
       </div>
 
+      <!-- Contenedor del video embebido -->
       <div class="video-wrap">
         <iframe
           src={videoAbierto.videoUrl}

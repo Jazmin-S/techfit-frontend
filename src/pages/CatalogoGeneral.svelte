@@ -1,32 +1,36 @@
 <script>
   /**
    * CatalogoGeneral.svelte
+   * muestra el catologo general de ejercicios
    */
 
   import { onMount } from "svelte";
-  import { listarEjercicios } from "../services/api";
+  import { listarEjercicios } from "../services/api"; //se importa la lista de ejercicios
 
   // Navegación (viene de App.svelte)
-  export let irALogin = null;
-  export let irAPerfil = null;
-  export let irAAgregarEjercicio = null;
+  export let irALogin = null; //se navega a la pantalla de login 
+  export let irAPerfil = null; // se navega a la pantalla perfil 
+  export let irAAgregarEjercicio = null; //se navega al formulario para agregar un ejercicio (solo el admin)
 
-  // Estado
-  let usuario = null;
-  let esAdmin = false;
+  // Estado del usuario
+  let usuario = null; //datos del usuario
+  let esAdmin = false; //bandera que indica si el usuario es admin
 
-  let ejercicios = [];
-  let cargando = true;
-  let error = "";
+  //estado de catalogo 
+  let ejercicios = []; //lista de ejercicio obtenidos del servidor 
+  let cargando = true; //muestra el estado de "cargando" mientras obtiene los datos
+  let error = ""; //mensaje de error si falla la carga
 
   // Modal video
-  let videoAbierto = null;
+  let videoAbierto = null; //video de ejercicio que se este mostrando (en null = modal cerrado)
 
+  //cierra la sesion eliminando datos de usuario y redirigiendo a Login
   function cerrarSesion() {
     localStorage.removeItem("usuario");
     irALogin?.();
   }
 
+  //abre el modal con el video del ejercicio seleccionado
   function abrirVideo(ejercicio) {
     if (!ejercicio?.videoUrl) return;
     videoAbierto = ejercicio;
@@ -36,6 +40,7 @@
     videoAbierto = null;
   }
 
+  //Obtiene la lista de ejercicios desde el servidor
   async function cargar() {
     cargando = true;
     error = "";
@@ -49,6 +54,7 @@
     }
   }
 
+//Al montar componente, verifica el usuario y carga los ejercicios
   onMount(async () => {
     try {
       const raw = localStorage.getItem("usuario");
@@ -56,7 +62,7 @@
     } catch {
       usuario = null;
     }
-
+//Determina si el usuario tiene permisos de admin
     esAdmin = !!(usuario?.esAdmin || usuario?.isAdmin || usuario?.es_admin);
     await cargar();
   });
@@ -79,6 +85,7 @@
         {/if}
 
         {#if esAdmin && irAAgregarEjercicio}
+        <!-- Botón visible solo para administradores -->
           <button class="btn add" on:click={irAAgregarEjercicio}>
             Agregar ejercicio
           </button>
@@ -92,6 +99,7 @@
     {#if cargando}
       <div class="state">Cargando ejercicios...</div>
     {:else if error}
+    <!-- Mensaje de error con opción de reintentar -->
       <div class="state error">
         {error}
         <button class="retry" on:click={cargar}>Reintentar</button>
@@ -101,6 +109,7 @@
     {:else}
       <div class="grid">
         {#each ejercicios as e}
+        <!-- Cada tarjeta es clickeable para abrir el video -->
           <article class="exercise-card" on:click={() => abrirVideo(e)}>
             <h2>{e.nombre}</h2>
 
@@ -126,7 +135,7 @@
   </section>
 
   {#if videoAbierto}
-    <!-- Overlay -->
+      <!-- Modal que se muestra al reproducir un video -->
     <div class="overlay" on:click={cerrarVideo}>
       <div class="modal" on:click|stopPropagation>
         <button class="close-btn" on:click={cerrarVideo}>✕</button>

@@ -1,38 +1,46 @@
 <script>
   import { registrarUsuario } from "../services/api";
 
+  //exporta para ir a Login
   export let irALogin;
 
+   // Variables para almacenar los datos del formulario
   let nombre = "";
   let correo = "";
   let contrasena = "";
   let confirmarContrasena = "";
   let tipoUsuario = "general";
 
+   // Estados para mensajes de feedback
   let error = "";
   let exito = "";
 
+  // Maneja el envío del formulario de registro
   async function handleSubmit(event) {
-    event.preventDefault();
-    error = "";
-    exito = "";
+    event.preventDefault(); // Evita que la página se recargue
+    error = ""; // Limpia mensajes de error
+    exito = ""; // Limpia mensajes de exito
 
+     // Valida que todos los campos estén completos
     if (!nombre || !correo || !contrasena || !confirmarContrasena) {
       error = "Todos los campos son obligatorios.";
       return;
     }
 
+    // Valida que la contraseña tenga al menos 8 caracteres
     if (contrasena.length < 8) {
       error = "La contraseña debe tener al menos 8 caracteres.";
       return;
     }
 
+      // Valida que ambas contraseñas coincidan
     if (contrasena !== confirmarContrasena) {
       error = "Las contraseñas no coinciden.";
       return;
     }
 
     try {
+       // Envía los datos al servidor para registrar al usuario
       const nuevoUsuario = await registrarUsuario({
         nombre,
         correo,
@@ -40,6 +48,7 @@
         tipoUsuario,
       });
 
+        // Muestra el usuario registrado en la consola
       console.log("Usuario registrado:", nuevoUsuario);
 
       exito = "Registro exitoso (simulado). Ahora puedes iniciar sesión.";
@@ -49,6 +58,7 @@
     }
   }
 
+  // Navega a la pantalla de login
   function handleIrALogin() {
     if (irALogin) irALogin();
   }

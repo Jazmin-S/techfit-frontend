@@ -1,21 +1,25 @@
 /**
  * src/services/api.js
- * Backend en Render
- * Nota: si tu backend tiene context-path=/api, BASE_URL debe incluir /api
+ * 
+ * Servicio de comunicación con el backend de TECHFIT.
+ * Contiene todas las funciones para interactuar con la API REST.
+ * 
+ * Backend desplegado en: https://techfit-backend.onrender.com
  */
 
 const BASE_URL = "https://techfit-backend.onrender.com";
 
 
-/* =========================
-   SESIÓN
-========================= */
+// MANEJO DE SESIÓN (LocalStorage)
+
+//Guarda los datos del usuario en el almacenamiento local del navegador
 function setSesion(data) {
   try {
     localStorage.setItem("usuario", JSON.stringify(data));
   } catch {}
 }
 
+// Obtiene los datos del usuario desde el almacenamiento local.
 function getSesion() {
   try {
     const raw = localStorage.getItem("usuario");
@@ -25,31 +29,36 @@ function getSesion() {
   }
 }
 
+// Cierra la sesión eliminando los datos del usuario
 export function cerrarSesion() {
   try {
     localStorage.removeItem("usuario");
   } catch {}
 }
 
-/* =========================
-   UTILS
-========================= */
+// FUNCIONES UTILITARIA
+
+//  Convierte cualquier URL de YouTube a formato embed (para iframes)
 export function normalizarYoutubeUrl(url) {
   if (!url) return "";
 
   const u = String(url).trim();
 
+  // Detectar formato youtu.be/
   const short = u.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
   if (short?.[1]) return `https://www.youtube.com/embed/${short[1]}`;
 
+  // Detectar formato youtube.com/watch?v=
   const watch = u.match(/v=([a-zA-Z0-9_-]+)/);
   if (watch?.[1]) return `https://www.youtube.com/embed/${watch[1]}`;
 
+  // Si ya está en formato embed, dejarla igual
   if (u.includes("/embed/")) return u;
 
   return u;
 }
 
+// Procesa la respuesta de fetch (maneja errores y formato JSON/texto).
 async function handleResponse(res) {
   const contentType = res.headers.get("content-type") || "";
   const isJson = contentType.includes("application/json");
@@ -73,14 +82,9 @@ async function handleResponse(res) {
   return isJson ? res.json() : res.text();
 }
 
-/* =========================
-   AUTH / USUARIOS (según tu UsuarioController)
-========================= */
+//  AUTENTICACIÓN Y USUARIOS
 
-/**
- * POST /auth/login
- * Tu backend espera: { correo, contrasena }
- */
+// Inicia sesión con correo y contraseña
 export async function login(correo, contrasena) {
   const res = await fetch(`${BASE_URL}/auth/login`, {
     method: "POST",
@@ -89,15 +93,11 @@ export async function login(correo, contrasena) {
   });
 
   const data = await handleResponse(res);
-  setSesion(data);
+  setSesion(data); // Guarda automáticamente la sesión
   return data;
 }
 
-/**
- * POST /usuarios
- * Registro / crear usuario
- * Ajusta campos si tu entidad Usuario tiene nombres distintos.
- */
+// Registra un nuevo usuario.
 export async function registrarUsuario({ nombre, correo, contrasena, tipoUsuario }) {
   const res = await fetch(`${BASE_URL}/usuarios`, {
     method: "POST",
@@ -106,19 +106,16 @@ export async function registrarUsuario({ nombre, correo, contrasena, tipoUsuario
       nombre,
       correo,
       contrasena,
-      tipoUsuario: tipoUsuario ?? "general", // default por si no lo mandas
+      tipoUsuario: tipoUsuario ?? "general", // default por si no se manda
     }),
   });
 
   const data = await handleResponse(res);
-  setSesion(data); // si no quieres autologin, borra esta línea
+  setSesion(data); // Inicia sesión automáticamente tras registro
   return data;
 }
 
-/**
- * DELETE /usuarios/{id}
- * Elimina un usuario por id
- */
+// Elimina un usuario por su ID.
 export async function eliminarUsuario(id) {
   const res = await fetch(`${BASE_URL}/usuarios/${id}`, {
     method: "DELETE",
@@ -126,17 +123,14 @@ export async function eliminarUsuario(id) {
 
   const data = await handleResponse(res);
 
-  // Si borraste al usuario logueado, cerramos sesión
+ // Si se eliminó al usuario actual, cerrar sesión
   const sesion = getSesion();
   if (sesion?.id === id) cerrarSesion();
 
   return data;
 }
 
-/**
- * GET /usuarios/{id}
- * Obtiene un usuario por id
- */
+// Obtiene información de un usuario por su ID.
 export async function obtenerUsuario(id) {
   const res = await fetch(`${BASE_URL}/usuarios/${id}`, {
     method: "GET",
@@ -147,10 +141,7 @@ export async function obtenerUsuario(id) {
 
 
 
-/**
- * PUT /usuarios/{id}
- * Tu controller actualiza: nombre, tipoUsuario y (si viene) contrasena
- */
+// Actualiza información de un usuario 
 export async function actualizarUsuario(id, { nombre, tipoUsuario, contrasena }) {
   const res = await fetch(`${BASE_URL}/usuarios/${id}`, {
     method: "PUT",
@@ -158,7 +149,7 @@ export async function actualizarUsuario(id, { nombre, tipoUsuario, contrasena })
     body: JSON.stringify({
       nombre,
       tipoUsuario,
-      contrasena, // si viene vacío, el backend lo ignora (según tu controller)
+      contrasena, // Se ignora si está vacío 
     }),
   });
 
@@ -166,16 +157,16 @@ export async function actualizarUsuario(id, { nombre, tipoUsuario, contrasena })
 
   const data = await handleResponse(res);
 
-  // refrescar sesión si estás editando tu propio usuario
+  // Actualiza la sesión si se editó al usuario actual
   const sesion = getSesion();
   if (sesion?.id === id) setSesion(data);
 
   return data;
 }
 
-/* =========================
-   EJERCICIOS
-========================= */
+//   EJERCICIOS
+
+// Obtiene la lista de ejercicios según el tipo de usuario
 
 export async function listarEjercicios(tipoUsuario) {
   const url = `${BASE_URL}/ejercicios?tipoUsuario=${encodeURIComponent(tipoUsuario)}`;
@@ -188,6 +179,7 @@ export async function listarEjercicios(tipoUsuario) {
   }));
 }
 
+// Crea un nuevo ejercicio (solo administradores)
 export async function crearEjercicio(payload) {
   const sesion = getSesion();
   const userId = sesion?.id || sesion?.idUsuario;
