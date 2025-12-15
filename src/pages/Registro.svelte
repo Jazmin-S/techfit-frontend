@@ -51,7 +51,7 @@
         // Muestra el usuario registrado en la consola
       console.log("Usuario registrado:", nuevoUsuario);
 
-      exito = "Registro exitoso (simulado). Ahora puedes iniciar sesión.";
+      exito = "Registro exitoso. Ahora puedes iniciar sesión.";
     } catch (e) {
       console.error(e);
       error = e.message || "No se pudo registrar el usuario.";
